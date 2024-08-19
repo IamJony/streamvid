@@ -1,0 +1,133 @@
+#!/bin/bash 
+
+# Obtener el directorio de trabajo actual
+DIR="/opt/streamvid"
+
+# Función para ejecutar yt-dlp con los encabezados configurados
+uyt-dlp () {
+    local url="$1"
+    local referer="$2"
+
+    yt-dlp --no-check-certificate "$url" \
+           --add-header "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0" \
+           --add-header "Accept: video/webm,video/ogg,video/*;q=0.9,application/ogg;q=0.7,audio/*;q=0.6,*/*;q=0.5" \
+           --add-header "Accept-Language: es-MX,es;q=0.8,en-US;q=0.5,en;q=0.3" \
+           --add-header "Range: bytes=0-" \
+           --add-header "Sec-GPC: 1" \
+           --add-header "Connection: keep-alive" \
+           --add-header "Referer: ${referer:-}" \
+           --add-header "Sec-Fetch-Dest: video" \
+           --add-header "Sec-Fetch-Mode: no-cors" \
+           --add-header "Sec-Fetch-Site: same-site" \
+           --add-header "Accept-Encoding: identity"
+}
+
+
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color
+
+if [ $# -lt 1 ]; then
+    echo -e "${RED}Usage: [--download|-d] [--mpv] <URL>${NC}"
+    echo ""
+    echo -e "${YELLOW}Options:${NC}"
+    echo -e "  ${GREEN}--download, -d${NC}     Download the content"
+    echo -e "  ${GREEN}--mpv${NC}              Play the content using MPV"
+    echo ""
+    echo -e "${YELLOW}Available servers:${NC}"
+    echo -e "  ${GREEN}streamwish${NC}"
+    echo -e "  ${GREEN}streamtape${NC}"
+    echo -e "  ${GREEN}mp4upload${NC}"
+    echo -e "  ${GREEN}voe${NC}"
+    echo -e "  ${GREEN}upload${NC}"
+    echo -e "  ${GREEN}ok.ru${NC}"
+    echo ""
+    exit 1
+fi
+
+# Variables para almacenar la URL original, el parámetro de descarga y el referer
+URL=""
+DOWNLOAD_PARAM=""
+REFERER=""
+MPV=""
+
+# Parsear argumentos
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --download|-d)
+            DOWNLOAD_PARAM="$1"
+            shift
+            ;;
+        --mpv)
+            MPV="$1"
+            shift
+            ;;
+        *)
+            URL="$1"
+            shift
+            ;;
+    esac
+done
+
+# Verificar si se proporcionó una URL
+if [ -z "$URL" ]; then
+    echo "Usage: $0 [--download|-d] <URL>"
+    exit 1
+fi
+
+REFERER=""
+Extractor=""
+
+# Ejecutar el extractor correspondiente basado en la URL y capturar su salida
+if [[ "$URL" =~ wish ]]; then
+    Extractor="$("$DIR/src/extractors/streamwish" "$URL")"
+    REFERER="https://streamwish.to/"
+elif [[ "$URL" =~ filemoon ]]; then
+    Extractor="$("$DIR/src/extractors/filemoon" "$URL")"
+    REFERER="https://filemoon.sx/"
+elif [[ "$URL" =~ streamtape ]]; then
+    Extractor="$("$DIR/src/extractors/streamtape" "$URL")"
+     REFERER="https://streamtape.com/"
+elif [[ "$URL" =~ mp4upload ]]; then
+    Extractor="$("$DIR/src/extractors/mp4upload" "$URL")"
+    REFERER="https://www.mp4upload.com/"
+elif [[ "$URL" =~ voe ]]; then
+    Extractor="$("$DIR/src/extractors/voe" "$URL")"
+	REFERER="https://voe.sx/"
+elif [[ "$URL" =~ upload ]]; then
+    Extractor="$("$DIR/src/extractors/upload" "$URL")"
+	REFERER="https://upload.com/"
+elif [[ "$URL" =~ ok.ru ]]; then
+    Extractor="$URL"
+else
+    echo "URL no compatible"
+    exit 1
+fi
+
+
+
+# Verificar si EXTRACTOR no está vacío
+if [ -n "$Extractor" ]; then
+    if [[ "$MPV" == "--mpv" ]]; then
+        echo "$REFERER"
+	  if [[ "$Extractor" =~ ok.ru ]]; then
+	    mpv "$URL" --http-header-fields="Range: bytes=0-"
+          else
+            mpv --referrer="$REFERER" "$Extractor"
+	  fi
+    elif [[ "$DOWNLOAD_PARAM" == "--download" || "$DOWNLOAD_PARAM" == "-d" ]]; then
+	  if [[ "$Extractor" =~ ok.ru ]]; then
+           yt-dlp "$Extractor" --referer="$REFERER"
+          else
+           yt-dlp "$Extractor" --referer="$REFERER"
+	  fi
+    else
+        echo "$Extractor"
+        exit 1
+    fi
+else
+    echo "no found"
+    exit 1
+fi

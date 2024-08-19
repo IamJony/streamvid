@@ -1,0 +1,20 @@
+#!/bin/bash
+# Voe Extractor
+
+ucurl () {
+local url="$1"
+curl -L -s -A "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0" \
+-b cookies.txt "$url"
+}
+
+
+upload() {
+local url="$1"
+embed_link=$(echo "$url" | sed 's/\(.com\|.co\)/.io/' 2>/dev/null)
+video_link=$(ucurl "$embed_link" | sed -n 's/.*sources: \["\([^"]*\.mp4\)".*/\1/p')
+[ -n "$video_link" ] && echo "$video_link"
+
+}
+
+# run test
+upload "$1"

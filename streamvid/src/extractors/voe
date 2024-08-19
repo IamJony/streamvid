@@ -1,0 +1,34 @@
+#!/bin/bash
+# Voe Extractor
+
+ucurl () {
+local url="$1"
+curl -L -s -A "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0" \
+-b cookies.txt "$url"
+}
+
+
+voe() {
+local url="$1"
+location=$(ucurl "$url" | grep -oP "window\.location\.href\s*=\s*'\K[^']+")
+newlocation=$(echo "$location" | sed -n '1p' 2>/dev/null)
+
+if [[ "$newlocation" =~ alleneconomicmatter ]]; then
+video_link=$(ucurl "$newlocation" | grep -oP "'mp4':\s*'\K[^']+" | base64 -d 2>/dev/null)	
+fi
+
+if [[ "$newlocation" =~ robertplacespace ]]; then
+video_link=$(ucurl "$newlocation" | grep -oP '(?<=prompt\("Node", ")[^"]*\.m3u8[^"]*')
+
+else
+
+video_link=$(ucurl "$newlocation" | grep -oP "'mp4':\s*'\K[^']+" | base64 -d 2>/dev/null)
+
+fi
+
+[ -n "$video_link" ] && echo "$video_link"
+
+}
+
+# run test
+voe "$1"
