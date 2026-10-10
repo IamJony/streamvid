@@ -15,12 +15,6 @@ Extractor HLS de videos embebidos. Soporta múltiples plataformas.
 
 ## Instalación
 
-### Opción 1 — Desde PyPI (recomendado)
-
-```bash
-pip install streamvid
-```
-
 ### Opción 2 — Instalación rápida desde los releases
 
 Descarga los dos wheels e instálalos. **Es imprescindible instalar también `eval_unpacker`**, ya que varios extractores lo usan para desofuscar el JavaScript embebido en las páginas; sin él, la mayoría de extractores fallarán.
