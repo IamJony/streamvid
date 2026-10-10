@@ -1,0 +1,170 @@
+#!/usr/bin/env python3
+# Extractor para voe IamJony
+import sys
+import re
+import base64
+import binascii
+import json
+from requests_html import HTMLSession
+from real_headers import real_headers
+
+# Headers y User-agent aletorios
+random_headers = real_headers()
+
+
+class VoeExtractor:
+    def __init__(self, session=None, debug=False):
+        self.session = session or HTMLSession()
+        self.debug = debug
+        self.redirect_pattern = re.compile(r"https?://[^'\"<>]+")
+        self.json_pattern = re.compile(
+            r'<script\s+type=["\']application/json["\']>(.*?)</script>', re.DOTALL
+        )
+        self.junk_parts = ["@$", "^^", "~@", "%?", "*~", "!!", "#&"]
+
+    def _log(self, msg, level="info"):
+        if not self.debug:
+            return
+        icons = {"info": "·", "ok": "✔", "fail": "✘", "warn": "⚠", "step": "→"}
+        print(f"[voe] {icons.get(level, '·')} {msg}", file=sys.stderr)
+
+    def _shift_letters(self, input_str):
+        result = []
+        for c in input_str:
+            code = ord(c)
+            if 65 <= code <= 90:
+                code = (code - 65 + 13) % 26 + 65
+            elif 97 <= code <= 122:
+                code = (code - 97 + 13) % 26 + 97
+            result.append(chr(code))
+        return "".join(result)
+
+    def _replace_junk(self, input_str):
+        for part in self.junk_parts:
+            input_str = input_str.replace(part, "_")
+        return input_str
+
+    def _shift_back(self, s, n):
+        return "".join(chr(ord(c) - n) for c in s)
+
+    def _decode_voe_string(self, encoded):
+        self._log(f"decodificando string ({len(encoded)} chars)", "step")
+        try:
+            step1 = self._shift_letters(encoded)
+            self._log("ROT13 aplicado")
+            step2 = self._replace_junk(step1).replace("_", "")
+            self._log("junk removido")
+            step3 = base64.b64decode(step2).decode()
+            self._log("base64 #1 decodificado")
+            step4 = self._shift_back(step3, 3)
+            step5 = base64.b64decode(step4[::-1]).decode()
+            self._log("base64 #2 decodificado")
+            result = json.loads(step5)
+            self._log("JSON parseado", "ok")
+            return result
+        except (binascii.Error, json.JSONDecodeError, UnicodeDecodeError) as err:
+            self._log(f"error decodificando: {err}", "fail")
+            raise ValueError(f"Error decodificando VOE: {err}")
+
+    def _extract_voe_source_from_html(self, html):
+        self._log("buscando bloques <script type=application/json>", "step")
+        try:
+            script_blocks = self.json_pattern.findall(html)
+            if not script_blocks:
+                self._log("no se encontraron bloques JSON", "warn")
+                return None
+
+            self._log(f"encontrados {len(script_blocks)} bloques")
+
+            for i, script_block in enumerate(script_blocks, 1):
+                self._log(f"probando bloque {i}/{len(script_blocks)}", "step")
+                encoded_text = script_block.strip()
+                if encoded_text.startswith('"') and encoded_text.endswith('"'):
+                    encoded_text = encoded_text[1:-1]
+
+                try:
+                    encoded_text = encoded_text.encode().decode("unicode_escape")
+                except UnicodeDecodeError:
+                    pass
+
+                try:
+                    decoded = self._decode_voe_string(encoded_text)
+                    source = decoded.get("source")
+                    if source:
+                        self._log(f"source encontrado: {source}", "ok")
+                        return source
+                    self._log(f"bloque {i} sin 'source'", "warn")
+                except ValueError:
+                    continue
+
+            self._log("ningún bloque contenía 'source'", "warn")
+            return None
+        except Exception as e:
+            self._log(f"error en extracción: {e}", "fail")
+            return None
+
+    def obtener_contenido(self, url):
+        self._log(f"descargando: {url}", "step")
+        try:
+            headers = random_headers
+            response = self.session.get(
+                url, headers=headers, allow_redirects=True)
+            html = response.text
+            self._log(f"HTML inicial ({len(html)} bytes)", "ok")
+
+            redirect_match = self.redirect_pattern.search(html)
+            if redirect_match:
+                redirect_url = redirect_match.group(0)
+                self._log(f"redirección detectada: {redirect_url}", "step")
+                response = self.session.get(
+                    redirect_url, headers=headers, allow_redirects=True)
+                self._log(f"HTML redirigido ({len(response.text)} bytes)", "ok")
+                return response.text
+
+            return html
+
+        except Exception as e:
+            self._log(f"error de descarga: {e}", "fail")
+            raise Exception(f"Error al descargar la página: {e}")
+
+    def extraer_video_src(self, contenido):
+        self._log("extrayendo source del HTML", "step")
+        try:
+            source = self._extract_voe_source_from_html(contenido)
+            if source:
+                return source
+        except Exception as e:
+            self._log(f"error: {e}", "fail")
+
+        self._log("no se encontró source", "warn")
+        return None
+
+
+def main():
+    args = [a for a in sys.argv[1:] if not a.startswith('--')]
+    debug = '--debug' in sys.argv or '-d' in sys.argv
+
+    if not args:
+        print(f"Uso: {sys.argv[0]} [--debug] <URL_VOE>", file=sys.stderr)
+        sys.exit(1)
+
+    url = args[0]
+
+    try:
+        extractor = VoeExtractor(debug=debug)
+        contenido = extractor.obtener_contenido(url)
+        video = extractor.extraer_video_src(contenido)
+
+        if video:
+            print(video)
+            extractor._log(f"extracción completada: {video}", "ok")
+        else:
+            sys.exit(1)
+
+    except Exception as e:
+        extractor._log(f"error fatal: {e}", "fail") if 'extractor' in dir() else None
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
