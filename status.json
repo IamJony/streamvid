@@ -1,13 +1,13 @@
 {
-  "timestamp": "2026-10-14T23:12:14+00:00",
+  "timestamp": "2026-10-14T23:15:27+00:00",
   "total": 6,
-  "live": 3,
-  "headers_ok": 3,
-  "headers_total": 3,
+  "live": 4,
+  "headers_ok": 4,
+  "headers_total": 4,
   "http_status": {
     "mp4upload": 200,
     "streamtape": 200,
-    "filemoon": 200,
+    "filemoon": null,
     "voe": 200,
     "okru": 200,
     "universal": 403
@@ -15,15 +15,15 @@
   "extractores": {
     "mp4upload": {
       "live": true,
-      "info": "https://a3.mp4upload.com:183/d/xsxxb7myz3b4quuolkrue2qskkjumunvdu6aqbio5omstl4mgqc64exka7c2ecnbhd7dj3mn/video.mp4",
+      "info": "https://a3.mp4upload.com:183/d/xsxxb7myz3b4quuolkrue2qskkjumunvdu6aqbio5omqs4vfg3ajh7l3wr3agvcl5vfcqvkb/video.mp4",
       "headers": {
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Encoding": "gzip, deflate, sdch",
-        "Accept-Language": "en-US,en;q=0.8",
-        "Cache-Control": "max-age=0",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate",
         "Connection": "keep-alive",
         "Upgrade-Insecure-Requests": "1",
-        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/37.0.2062.120 Chrome/37.0.2062.120 Safari/537.36",
+        "Cache-Control": "max-age=0",
+        "User-Agent": "Mozilla/5.0 (X11; Linux; rv:74.0) Gecko/20100101 Firefox/74.0",
         "Referer": "https://www.mp4upload.com/"
       },
       "error": null,
@@ -31,15 +31,13 @@
     },
     "streamtape": {
       "live": true,
-      "info": "https://strtape.cloud/get_video?id=jpYjkraO4ZhzVZk&expires=1792089399&ip=FROsD0AAKxSHDN&token=YC18m9c9-T1X&stream=1",
+      "info": "https://strtape.cloud/get_video?id=jpYjkraO4ZhzVZk&expires=1792089715&ip=G0WsD0EPKxSHDN&token=IB77Ay2AHsyq&stream=1",
       "headers": {
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Encoding": "gzip, deflate, sdch",
-        "Accept-Language": "en-US,en;q=0.8",
-        "Cache-Control": "max-age=0",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Encoding": "gzip, deflate",
+        "Accept-Language": "en-us",
         "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/45.0.2454.101 Chrome/45.0.2454.101 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Macintosh; U; PPC Mac OS X; nl-nl) AppleWebKit/418.8 (KHTML, like Gecko) Safari/419.3",
         "Referer": "https://strtape.cloud/"
       },
       "error": null,
@@ -49,26 +47,34 @@
       "live": false,
       "info": "",
       "headers": null,
-      "error": "No se encontró el script con eval",
+      "error": "Error al descargar la página: HTTPSConnectionPool(host='sfastwish.com', port=443): Max retries exceeded with url: /e/t0skqlzi01j0 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1016)')))",
       "tested_url": "https://sfastwish.com/e/t0skqlzi01j0"
     },
     "voe": {
-      "live": false,
-      "info": "",
-      "headers": null,
-      "error": "Error al descargar la página: HTTPSConnectionPool(host='megankiddifference.com', port=443): Max retries exceeded with url: /e/vnooybqweztc (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x7fdead0a4c90>, 'Connection to megankiddifference.com timed out. (connect timeout=None)'))",
+      "live": true,
+      "info": "https://ugc-cdn-caching-n3neuvwjq4hpqohwfe.cloudwindow-route.com/engine/hls2/01/10120/vnooybqweztc_,n,.urlset/master.m3u8?t=oTYshqZt8OWyKOutf0n-2v4sjSKJJmaBXNU2DJJNf6o&s=1792019726&e=14400&f=50603638&node=d53lEmEHQQNSXUGpvHAFDDt9O+aG63bsnBRZ0rNF4M0=&i=52.176&sp=2500&asn=8075&q=n&rq=7XRHT5ARJGpYe8S5t4sVmCJUp2QrO3NJ3LwlGYI7",
+      "headers": {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Encoding": "gzip, deflate",
+        "Accept-Language": "en-us",
+        "Connection": "keep-alive",
+        "User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 5.1; nb-NO) AppleWebKit/528.16 (KHTML, like Gecko) Version/4.0 Safari/528.16",
+        "Referer": "https://megankiddifference.com/"
+      },
+      "error": null,
       "tested_url": "https://voe.sx/e/vnooybqweztc"
     },
     "okru": {
       "live": true,
-      "info": "https://vd473.okcdn.ru/expires/1792105934079/clientType/0/srcIp/20.109.87.115/type/2/mid/6127798127135/id/1216539855584/ms/185.180.203.122/zs/43/srcAg/CHROME/urls/95.163.35.83/oq/0/pr/10/ct/28/sig/x8D0tTko2uQ/ondemand/hls4_1216539855584.CJ-U7OmrsgFAn6rE68wRUAqSMMxWDjC4ag.m3u8",
+      "info": "https://vd473.okcdn.ru/expires/1792106127807/clientType/0/srcIp/52.176.126.113/type/2/mid/6127798127135/id/1216539855584/ms/185.180.203.122/zs/43/srcAg/CHROME/urls/95.163.35.83/oq/0/pr/10/ct/28/sig/FUWQNBSNSbY/ondemand/hls4_1216539855584.CJ-U7OmrsgFAn6rE68wRUAqSMMxWDjC4ag.m3u8",
       "headers": {
         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
         "Referer": "https://ok.ru/",
         "Upgrade-Insecure-Requests": "1",
-        "Accept-Encoding": "gzip, deflate",
+        "Accept-Encoding": "gzip, deflate, sdch",
+        "Cache-Control": "max-age=0",
         "Connection": "keep-alive"
       },
       "error": null,
