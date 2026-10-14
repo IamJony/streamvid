@@ -29,6 +29,11 @@ jobs:
           pip install git+https://github.com/IamJony/eval-unpacker.git
           pip install -e .
 
+      - name: Verificar eval-unpacker
+        run: |
+          which eval-unpacker || echo "⚠️ eval-unpacker NO encontrado"
+          eval-unpacker --help || true
+
       - name: Autotest offline
         run: streamvid --test
 
