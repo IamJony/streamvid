@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "streamvid"
+version = "1.0.0"
+description = "Video extractor from multiple streaming platforms"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+    { name = "IamJony", email = "tu@email.com" },
+]
+license = { text = "MIT" }
+keywords = ["video", "extractor", "streaming", "hls", "m3u8"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "requests_html",
+    "real_headers",
+    "lxml_html_clean",
+]
+
+[project.urls]
+Homepage = "https://github.com/IamJony/streamvid"
+Repository = "https://github.com/IamJony/streamvid"
+Issues = "https://github.com/IamJony/streamvid/issues"
+
+
+[project.scripts]
+streamvid = "streamvid.cli:main"
+
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "ruff",
+]
+
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
