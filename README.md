@@ -2,6 +2,8 @@
 
 Extractor HLS de videos embebidos soporta múltiples plataformas de streaming.
 
+[![Status](https://img.shields.io/badge/status-ver%20estado%20de%20los%20extractores-brightgreen?style=for-the-badge)](https://iamjony.github.io/streamvid/status.html)
+
 ## ¿Qué es?
 
 Streamvid es una **librería Python** que, dada la URL de un video embebido en
@@ -32,6 +34,7 @@ pip install https://github.com/IamJony/eval-unpacker/releases/download/eval_unpa
 ```
 
 ## Clona el repositorio de streamvid
+
 Requiere Python 3.8+.
 
 ```bash
