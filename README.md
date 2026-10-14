@@ -23,6 +23,14 @@ También incluye una CLI para uso directo desde la terminal.
 
 ## Instalación
 
+### Dependencias
+
+`streamvid` depende del paquete `eval-unpacker` para que funcionen los extractores. Este debe ser instalado de manera manual con el siguiente comando:
+
+```bash
+pip install https://github.com/IamJony/eval-unpacker/releases/download/eval_unpacker-0.1.0/eval_unpacker-0.1.0-py3-none-any.whl
+```
+
 Requiere Python 3.8+.
 
 ```bash
@@ -32,14 +40,6 @@ pip install -e .
 ```
 
 Esto instala el comando `streamvid` en tu PATH.
-
-
-
-## Dependencias
-
-streamvid depende del paquete eval-unpacker este debe ser instalado de manera manual con el siguiente comando
-
-
 
 ## Uso rápido
 
