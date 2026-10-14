@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-14T23:27:22+00:00",
+  "timestamp": "2026-10-14T23:30:12+00:00",
   "total": 6,
   "live": 4,
   "headers_ok": 4,
@@ -7,7 +7,7 @@
   "http_status": {
     "mp4upload": 200,
     "streamtape": 200,
-    "filemoon": 200,
+    "filemoon": null,
     "voe": 200,
     "okru": 200,
     "universal": 403
@@ -15,15 +15,15 @@
   "extractores": {
     "mp4upload": {
       "live": true,
-      "info": "https://a3.mp4upload.com:183/d/xsxxb7myz3b4quuolkrue2qskkjumunvdu6aqbio5omss2opkx2ipiljbkmt7gzw5vpw2ee7/video.mp4",
+      "info": "https://a3.mp4upload.com:183/d/xsxxb7myz3b4quuolkrue2qskkjumunvdu6aqbio5omstfsflra2s27dv5g7uqrobz6rw2z7/video.mp4",
       "headers": {
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Encoding": "gzip, deflate, sdch",
-        "Accept-Language": "en-US,en;q=0.8",
-        "Cache-Control": "max-age=0",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate",
         "Connection": "keep-alive",
         "Upgrade-Insecure-Requests": "1",
-        "User-Agent": "Mozilla/5.0 (X11; Linux i686) AppleWebKit/536.11 (KHTML, like Gecko) Ubuntu/12.04 Chromium/20.0.1132.47 Chrome/20.0.1132.47 Safari/536.11",
+        "Cache-Control": "max-age=0",
+        "User-Agent": "Mozilla/5.0 (X11; U; SunOS sun4u; en-US; rv:1.8.0.7) Gecko/20060915 Firefox/1.5.0.7",
         "Referer": "https://www.mp4upload.com/"
       },
       "error": null,
@@ -31,15 +31,13 @@
     },
     "streamtape": {
       "live": true,
-      "info": "https://strtape.cloud/get_video?id=jpYjkraO4ZhzVZk&expires=1792090439&ip=FROsD0ESKxSHDN&token=77DvgeiH31aA&stream=1",
+      "info": "https://strtape.cloud/get_video?id=jpYjkraO4ZhzVZk&expires=1792090610&ip=FROsFxqnDS9X&token=3rlJ7caE-A-Z&stream=1",
       "headers": {
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Encoding": "gzip, deflate, sdch",
-        "Accept-Language": "en-US,en,q=0.8",
-        "Cache-Control": "max-age=0",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-        "User-Agent": "Opera/9.21 (X11; Linux x86_64; U; en)",
+        "Accept": "text/html, application/xhtml+xml, image/jxr, */*",
+        "Accept-Encoding": "gzip, deflate",
+        "Accept-Language": "en-US, en; q=0.7",
+        "Connection": "Keep-Alive",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582",
         "Referer": "https://strtape.cloud/"
       },
       "error": null,
@@ -54,13 +52,15 @@
     },
     "voe": {
       "live": true,
-      "info": "https://ugc-cdn-caching-n3neuvwjq4hpqohwfe.cloudwindow-route.com/engine/hls2/01/10120/vnooybqweztc_,n,.urlset/master.m3u8?t=iUhLr18LISaS6qjFp9fcgrPaXZSyLK6dk-kQpUbbum0&s=1792020441&e=14400&f=50603638&node=d53lEmEHQQNSXUGpvHAFDDt9O+aG63bsnBRZ0rNF4M0=&i=20.171&sp=2500&asn=8075&q=n&rq=u6Er0YhVSFIZ1n2pNVBlO7Cf5uBn9OdjzUF5nJ6A",
+      "info": "https://ugc-cdn-caching-n3neuvwjq4hpqohwfe.cloudwindow-route.com/engine/hls2/01/10120/vnooybqweztc_,n,.urlset/master.m3u8?t=OcOtzk45vPpZHgGO3ONSk6ehaFLvs3Vpct9xJs1e-Rg&s=1792020611&e=14400&f=50603638&node=d53lEmEHQQNSXUGpvHAFDDt9O+aG63bsnBRZ0rNF4M0=&i=20.84&sp=2500&asn=8075&q=n&rq=JFbecObKR91rk9G5APXX7Pwg7DwkIqbHpcuITaai",
       "headers": {
-        "Accept": "text/html, application/xhtml+xml, image/jxr, */*",
-        "Accept-Encoding": "gzip, deflate",
-        "Accept-Language": "en-US, en; q=0.7",
-        "Connection": "Keep-Alive",
-        "User-Agent": "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML like Gecko) Chrome/46.0.2486.0 Safari/537.36 Edge/13.9200",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Encoding": "gzip, deflate, sdch",
+        "Accept-Language": "en-US,en;q=0.8",
+        "Cache-Control": "max-age=0",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/58.0.3029.110 Chrome/58.0.3029.110 Safari/537.36",
         "Referer": "https://megankiddifference.com/"
       },
       "error": null,
@@ -68,7 +68,7 @@
     },
     "okru": {
       "live": true,
-      "info": "https://vd473.okcdn.ru/expires/1792106842834/clientType/0/srcIp/20.171.20.18/type/2/mid/6127798127135/id/1216539855584/ms/185.180.203.122/zs/43/srcAg/CHROME/urls/178.237.23.0/oq/0/pr/10/ct/28/sig/z075sRyxOtc/ondemand/hls4_1216539855584.CJ-U7OmrsgFAn6rE68wRUAqSMMxWDjC4ag.m3u8",
+      "info": "https://vd473.okcdn.ru/expires/1792107012391/clientType/0/srcIp/20.84.158.27/type/2/mid/6127798127135/id/1216539855584/ms/185.180.203.122/zs/43/srcAg/CHROME/urls/95.163.35.83/oq/0/pr/10/ct/28/sig/bxSAV49e-vo/ondemand/hls4_1216539855584.CJ-U7OmrsgFAn6rE68wRUAqSMMxWDjC4ag.m3u8",
       "headers": {
         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
