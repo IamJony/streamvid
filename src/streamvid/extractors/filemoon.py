@@ -5,6 +5,7 @@ import sys
 import re
 import subprocess
 import os
+from urllib.parse import urlparse
 from requests_html import HTMLSession
 from real_headers import real_headers
 
@@ -16,6 +17,7 @@ class FileMoonExtractor:
         self.session = session or HTMLSession()
         self.temp_file = temp_file
         self.debug = debug
+        self.headers = None
 
     # ---------- API pública ----------
 
@@ -55,6 +57,10 @@ class FileMoonExtractor:
                 print(f"[filemoon] error: {e}", file=sys.stderr)
             sys.exit(1)
 
+    def obtener_headers(self):
+        """Headers exactos que el CDN espera. Disponible tras extraer()."""
+        return dict(self.headers) if self.headers else None
+
     # ---------- Logging ----------
 
     def _log(self, msg, level="info"):
@@ -68,13 +74,23 @@ class FileMoonExtractor:
     def _obtener_html(self, url):
         self._log(f"descargando: {url}", "step")
         try:
-            response = self.session.get(url, headers=real_headers(), allow_redirects=True)
+            headers = real_headers()
+            response = self.session.get(url, headers=headers, allow_redirects=True)
             response.raise_for_status()
             self._log(f"HTML obtenido ({len(response.text)} bytes)", "ok")
+
+            self.headers = dict(headers)
+            self.headers["Referer"] = self._dominio_base(response.url)
+
             return response.text
         except Exception as e:
             self._log(f"error de descarga: {e}", "fail")
             raise Exception(f"Error al descargar la página: {e}")
+
+    @staticmethod
+    def _dominio_base(url):
+        p = urlparse(url)
+        return f"{p.scheme}://{p.netloc}/"
 
     # ---------- Eval unpacker ----------
 

@@ -114,15 +114,17 @@ def print_info(message):
 
 
 def run_extractor(name, url, debug=False):
+    """Devuelve (resultado, extractor) para poder consultar obtener_headers()."""
     extractor_cls = EXTRACTOR_INFO[name]['class']
     extractor = extractor_cls(debug=debug)
-    return extractor.extraer(url)
+    result = extractor.extraer(url)
+    return result, extractor
 
 
 def main():
     parser = argparse.ArgumentParser(
         description="Video extractor from multiple platforms",
-        usage="%(prog)s [--extractor EXTRACTOR] [--debug] [--info] [--list] [--test] <URL>"
+        usage="%(prog)s [--extractor EXTRACTOR] [--debug] [--info] [--list] [--test] [--headers] <URL>"
     )
 
     parser.add_argument('url', nargs='?', help='Video embed URL to extract')
@@ -136,6 +138,8 @@ def main():
                         help='List all available servers')
     parser.add_argument('-t', '--test', action='store_true',
                         help='Run offline self-test of extractors')
+    parser.add_argument('--headers', action='store_true',
+                        help='Print the headers needed to consume the link')
 
     args = parser.parse_args()
 
@@ -148,7 +152,7 @@ def main():
 
     if not args.url:
         print_error("URL not provided")
-        print(f"\nUsage: {sys.argv[0]} [--extractor EXTRACTOR] [--debug] [--info] [--list] [--test] <URL>")
+        print(f"\nUsage: {sys.argv[0]} [--extractor EXTRACTOR] [--debug] [--info] [--list] [--test] [--headers] <URL>")
         print(f"\n{color_text('Available extractors:', Colors.BOLD)}")
         for key in EXTRACTOR_INFO.keys():
             print(f"  {color_text(key, Colors.CYAN)}")
@@ -170,7 +174,7 @@ def main():
         print()
 
     try:
-        result = run_extractor(name, args.url, debug=args.debug)
+        result, extractor = run_extractor(name, args.url, debug=args.debug)
     except Exception as e:
         if args.info:
             print(f"{color_text('✗', Colors.RED)} {extractor_name}: {color_text('ERROR', Colors.RED)}")
@@ -182,6 +186,15 @@ def main():
     if result:
         if args.info:
             print(f"{color_text('✓', Colors.GREEN)} {extractor_name}: {color_text('FOUND', Colors.GREEN)}")
+
+        # Headers (si se piden y el extractor los soporta)
+        if args.headers and hasattr(extractor, "obtener_headers"):
+            h = extractor.obtener_headers()
+            if h:
+                for k, v in h.items():
+                    print(f"# {k}: {v}")
+
+        if args.info:
             print(f"  {color_text('URL:', Colors.CYAN)} {result}")
         else:
             print(f"{color_text(result, Colors.GREEN)}")

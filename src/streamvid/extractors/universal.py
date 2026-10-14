@@ -8,6 +8,7 @@ import json
 import base64
 import binascii
 import subprocess
+from urllib.parse import urlparse
 from requests_html import HTMLSession
 from real_headers import real_headers
 
@@ -23,6 +24,7 @@ class UniversalExtractor:
         self.session = session or HTMLSession()
         self.temp_file = temp_file
         self.debug = debug
+        self.headers = None
 
         self.redirect_pattern = re.compile(r"https?://[^'\"<>]+")
         self.json_pattern = re.compile(
@@ -39,10 +41,6 @@ class UniversalExtractor:
         return True
 
     def extraer(self, url, _recursion=0):
-        """
-        Aplica TODAS las estrategias sobre la URL, sin importar el dominio.
-        Devuelve el primer enlace válido encontrado.
-        """
         if _recursion > 3:
             raise Exception("Demasiadas redirecciones internas")
 
@@ -81,7 +79,6 @@ class UniversalExtractor:
         raise Exception("Ninguna estrategia pudo extraer el video")
 
     def extraer_y_mostrar(self, url):
-        """Extrae y muestra el enlace. Silencioso salvo con --debug."""
         try:
             link = self.extraer(url)
             print(link)
@@ -90,6 +87,9 @@ class UniversalExtractor:
             if self.debug:
                 print(f"[universal] error: {e}", file=sys.stderr)
             sys.exit(1)
+
+    def obtener_headers(self):
+        return dict(self.headers) if self.headers else None
 
     # ============================================================
     #                     LOG
@@ -103,13 +103,23 @@ class UniversalExtractor:
     # ============================================================
     def _obtener_html(self, url, allow_redirects=True):
         try:
+            headers = real_headers()
             response = self.session.get(
-                url, headers=real_headers(), allow_redirects=allow_redirects
+                url, headers=headers, allow_redirects=allow_redirects
             )
             response.raise_for_status()
+
+            self.headers = dict(headers)
+            self.headers["Referer"] = self._dominio_base(response.url)
+
             return response.text
         except Exception as e:
             raise Exception(f"Error al descargar la página: {e}")
+
+    @staticmethod
+    def _dominio_base(url):
+        p = urlparse(url)
+        return f"{p.scheme}://{p.netloc}/"
 
     def _limpiar_temp(self):
         try:
@@ -119,7 +129,7 @@ class UniversalExtractor:
             pass
 
     # ============================================================
-    #        ESTRATEGIA 1: eval-unpacker (FileMoon/StreamWish/etc.)
+    #        ESTRATEGIA 1: eval-unpacker
     # ============================================================
     def _buscar_script_eval(self, html):
         patron = (
@@ -164,7 +174,7 @@ class UniversalExtractor:
             self._limpiar_temp()
 
     # ============================================================
-    #                  ESTRATEGIA 2: VOE (base64/ROT13)
+    #                  ESTRATEGIA 2: VOE
     # ============================================================
     @staticmethod
     def _voe_shift_letters(s):
@@ -224,7 +234,7 @@ class UniversalExtractor:
         return None
 
     # ============================================================
-    #          ESTRATEGIA 3: Patrones directos (m3u8/mp4)
+    #          ESTRATEGIA 3: Patrones directos
     # ============================================================
     def _estrategia_patrones_directos(self, url, html):
         m = re.search(r'(https?://[^"\'\s<>]+master\.m3u8[^"\'\s<>]*)', html)
@@ -252,7 +262,7 @@ class UniversalExtractor:
         return None
 
     # ============================================================
-    #        ESTRATEGIA 4: Streamtape (captchalink / botlink)
+    #        ESTRATEGIA 4: Streamtape
     # ============================================================
     def _estrategia_streamtape(self, url, html):
         if ("document.getElementById('captchalink')" in html or

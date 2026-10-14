@@ -11,6 +11,7 @@ import re
 import base64
 import binascii
 import json
+from urllib.parse import urlparse
 
 from requests_html import HTMLSession
 
@@ -20,29 +21,30 @@ from real_headers import real_headers
 class VoeExtractor:
     """Extractor para VOE. Encapsula descarga + decodificación."""
 
-    # Dominios que reconoce
     DOMINIOS = ("voe.sx", "sfastwish.com")
 
     def __init__(self, session=None, debug=False):
         self.session = session or HTMLSession()
         self.debug = debug
+        self.headers = None
         self.redirect_pattern = re.compile(r"https?://[^'\"<>]+")
         self.json_pattern = re.compile(
             r'<script\s+type=["\']application/json["\']>(.*?)</script>', re.DOTALL
         )
         self.junk_parts = ["@$", "^^", "~@", "%?", "*~", "!!", "#&"]
 
+    # ---------- API pública ----------
+
     def soporta(self, url: str) -> bool:
-        """Devuelve True si la URL es de VOE."""
         return any(dominio in url for dominio in self.DOMINIOS)
 
     def extraer(self, url: str):
-        """
-        Punto de entrada público.
-        Descarga la página y extrae la URL del video (src).
-        """
         contenido = self._obtener_contenido(url)
         return self._extraer_video_src(contenido)
+
+    def obtener_headers(self):
+        """Headers exactos que el CDN espera. Disponible tras extraer()."""
+        return dict(self.headers) if self.headers else None
 
     # ---------- Logging ----------
 
@@ -77,19 +79,14 @@ class VoeExtractor:
         self._log(f"decodificando string ({len(encoded)} chars)", "step")
         try:
             step1 = self._shift_letters(encoded)
-            self._log("ROT13 aplicado")
             step2 = self._replace_junk(step1).replace("_", "")
-            self._log("junk removido")
             step3 = base64.b64decode(step2).decode()
-            self._log("base64 #1 decodificado")
             step4 = self._shift_back(step3, 3)
             step5 = base64.b64decode(step4[::-1]).decode()
-            self._log("base64 #2 decodificado")
             result = json.loads(step5)
             self._log("JSON parseado", "ok")
             return result
         except (binascii.Error, json.JSONDecodeError, UnicodeDecodeError) as err:
-            self._log(f"error decodificando: {err}", "fail")
             raise ValueError(f"Error decodificando VOE: {err}")
 
     def _extract_voe_source_from_html(self, html):
@@ -97,13 +94,9 @@ class VoeExtractor:
         try:
             script_blocks = self.json_pattern.findall(html)
             if not script_blocks:
-                self._log("no se encontraron bloques JSON", "warn")
                 return None
 
-            self._log(f"encontrados {len(script_blocks)} bloques")
-
             for i, script_block in enumerate(script_blocks, 1):
-                self._log(f"probando bloque {i}/{len(script_blocks)}", "step")
                 encoded_text = script_block.strip()
                 if encoded_text.startswith('"') and encoded_text.endswith('"'):
                     encoded_text = encoded_text[1:-1]
@@ -117,13 +110,10 @@ class VoeExtractor:
                     decoded = self._decode_voe_string(encoded_text)
                     source = decoded.get("source")
                     if source:
-                        self._log(f"source encontrado: {source}", "ok")
                         return source
-                    self._log(f"bloque {i} sin 'source'", "warn")
                 except ValueError:
                     continue
 
-            self._log("ningún bloque contenía 'source'", "warn")
             return None
         except Exception as e:
             self._log(f"error en extracción: {e}", "fail")
@@ -136,10 +126,9 @@ class VoeExtractor:
         try:
             headers = real_headers()
             response = self.session.get(url, headers=headers, allow_redirects=True)
-            html = response.text
-            self._log(f"HTML inicial ({len(html)} bytes)", "ok")
+            self._log(f"HTML inicial ({len(response.text)} bytes)", "ok")
 
-            redirect_match = self.redirect_pattern.search(html)
+            redirect_match = self.redirect_pattern.search(response.text)
             if redirect_match:
                 redirect_url = redirect_match.group(0)
                 self._log(f"redirección detectada: {redirect_url}", "step")
@@ -147,13 +136,22 @@ class VoeExtractor:
                     redirect_url, headers=headers, allow_redirects=True
                 )
                 self._log(f"HTML redirigido ({len(response.text)} bytes)", "ok")
-                return response.text
 
-            return html
+            # Guardar headers usados + Referer del dominio final
+            self.headers = dict(headers)
+            self.headers["Referer"] = self._dominio_base(response.url)
+
+            return response.text
 
         except Exception as e:
             self._log(f"error de descarga: {e}", "fail")
             raise Exception(f"Error al descargar la página: {e}")
+
+    @staticmethod
+    def _dominio_base(url):
+        """https://sfastwish.com/e/abc → https://sfastwish.com/"""
+        p = urlparse(url)
+        return f"{p.scheme}://{p.netloc}/"
 
     # ---------- Parseo (interna) ----------
 
@@ -170,7 +168,7 @@ class VoeExtractor:
         return None
 
 
-# ---------- CLI para depurar voe solo) ----------
+# ---------- CLI para depurar voe solo ----------
 
 def _main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
@@ -187,7 +185,10 @@ def _main():
         video = extractor.extraer(url)
         if video:
             print(video)
-            extractor._log(f"extracción completada: {video}", "ok")
+            if debug:
+                print("\n# Headers:", file=sys.stderr)
+                for k, v in (extractor.obtener_headers() or {}).items():
+                    print(f"#   {k}: {v}", file=sys.stderr)
         else:
             sys.exit(1)
     except Exception as e:

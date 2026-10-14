@@ -27,11 +27,12 @@ src/streamvid/extractors/<nombre>.py
 
 ## 2. Interfaz pública obligatoria
 
-Todo extractor expone **exactamente** estos dos métodos:
+Todo extractor expone **exactamente** estos tres métodos:
 
 ```python
 def soporta(self, url: str) -> bool: ...
 def extraer(self, url: str) -> str | None: ...
+def obtener_headers(self) -> dict | None: ...
 ```
 
 ### `soporta(url)`
@@ -67,6 +68,21 @@ def extraer(self, url):
     return video
 ```
 
+### `obtener_headers()`
+
+- Devuelve un dict con los headers HTTP que el CDN espera para servir el
+  video (`User-Agent`, `Referer`, etc.).
+- **Disponible solo después de `extraer()`.** Antes devuelve `None`.
+- Devuelve una **copia** del dict interno, no una referencia (para que el
+  usuario no pueda mutar el estado del extractor).
+- Esencial para CDN que exigen `Referer` concreto y devuelven `403` sin él.
+
+```python
+def obtener_headers(self):
+    """Headers que el CDN espera. Disponible tras llamar a extraer()."""
+    return dict(self.headers) if self.headers else None
+```
+
 ---
 
 ## 3. Constructor
@@ -75,10 +91,12 @@ def extraer(self, url):
 def __init__(self, session=None, debug=False):
     self.session = session or HTMLSession()
     self.debug = debug
+    self.headers = None      # ← se rellena en la primera petición
 ```
 
 - `session` inyectable para tests.
 - `debug` booleano que controla el logging.
+- `headers` empieza como `None` y se rellena tras la primera descarga.
 - Otros parámetros opcionales siempre con default.
 
 ---
@@ -130,7 +148,9 @@ def extraer_y_mostrar(self, url):
 
 ---
 
-## 6. Headers
+## 6. Headers de la petición
+
+### Generar en cada petición, no al importar
 
 **Nunca** generar headers al importar el módulo:
 
@@ -156,7 +176,10 @@ class MiExtractor:
 
 Cada petición sale con User-Agent distinto → menos bloqueos.
 
-Si necesitas headers extra:
+### Headers específicos del sitio
+
+Si necesitas añadir headers fijos (por ejemplo, un `Referer` que el sitio
+exige siempre):
 
 ```python
 def _build_headers(self):
@@ -172,7 +195,85 @@ def _build_headers(self):
 
 ---
 
-## 7. Métodos auxiliares
+## 7. Headers para el CDN (`obtener_headers`)
+
+Cuando el CDN del video exige un `Referer` concreto para servir el HLS/MP4,
+hay que **capturar los headers exactos** que se usaron en la petición al embed
+y exponerlos con `obtener_headers()`.
+
+### Cómo implementarlo
+
+En el método de descarga, después de obtener la respuesta:
+
+```python
+def _obtener_contenido(self, url):
+    headers = real_headers()
+    response = self.session.get(url, headers=headers, allow_redirects=True)
+    response.raise_for_status()
+
+    # Guardar headers usados + Referer del dominio final tras redirects
+    self.headers = dict(headers)
+    self.headers["Referer"] = self._dominio_base(response.url)
+
+    return response.text
+```
+
+Y añadir el helper estático:
+
+```python
+@staticmethod
+def _dominio_base(url):
+    """https://luluvdo.com/e/abc → https://luluvdo.com/"""
+    from urllib.parse import urlparse
+    p = urlparse(url)
+    return f"{p.scheme}://{p.netloc}/"
+```
+
+### ¿Por qué el Referer es el dominio final?
+
+Muchos sitios redirigen a dominios aleatorios que cambian por sesión
+(ej. `vidhidevip.com` → `callistanise.com`). El CDN solo sirve el video si el
+`Referer` coincide con el **último dominio que sirvió el HTML**, no el de la
+URL original. `response.url` tras `allow_redirects=True` da exactamente eso.
+
+### Reglas
+
+- `self.headers` empieza como `None` en `__init__`.
+- Se rellena **en la primera petición** (no antes, no después).
+- Incluye siempre `Referer` del dominio final tras redirects.
+- `obtener_headers()` devuelve una **copia** (`dict(self.headers)`), nunca la
+  referencia directa.
+- Si aún no se ha llamado a `extraer()`, devuelve `None`.
+
+### Casos especiales
+
+**Recursión** (por ejemplo `universal.py` que sigue redirecciones):
+
+```python
+if self.headers is None:
+    self.headers = dict(headers)
+    self.headers["Referer"] = self._dominio_base(response.url)
+```
+
+Así el Referer que prevalece es el del **primer salto**, no el del último.
+
+**Headers fijos del sitio + real_headers** (por ejemplo `okru.py`):
+
+```python
+def _obtener_html(self, url):
+    headers = self._build_headers()      # mezcla fijos + aleatorios
+    response = self.session.get(url, headers=headers, allow_redirects=True)
+    response.raise_for_status()
+
+    self.headers = dict(headers)
+    self.headers["Referer"] = self._dominio_base(response.url)
+
+    return response.text
+```
+
+---
+
+## 8. Métodos auxiliares
 
 Todos los métodos internos van con prefijo `_`:
 
@@ -180,14 +281,16 @@ Todos los métodos internos van con prefijo `_`:
 def _obtener_contenido(self, url): ...
 def _extraer_video_src(self, contenido): ...
 def _limpiar_temp(self): ...
+def _dominio_base(self, url): ...
 ```
 
-- **Público** solo lo que el usuario del extractor necesita: `soporta`, `extraer`.
+- **Público** solo lo que el usuario del extractor necesita:
+  `soporta`, `extraer`, `obtener_headers`.
 - Todo lo demás `_`.
 
 ---
 
-## 8. Patrones de extracción
+## 9. Patrones de extracción
 
 | Sitio                | Técnica                                                      |
 | -------------------- | ------------------------------------------------------------ |
@@ -217,7 +320,7 @@ Evita capturar `favicon.png`, `.css`, `.js` u otros recursos.
 
 ---
 
-## 9. Detección de páginas de error
+## 10. Detección de páginas de error
 
 Algunos sitios devuelven `200 OK` con una página de error. Detectarlo:
 
@@ -235,7 +338,7 @@ Si lo detectas, lanza excepción antes de parsear.
 
 ---
 
-## 10. Estructura completa
+## 11. Estructura completa
 
 ```python
 #!/usr/bin/env python3
@@ -243,6 +346,7 @@ Si lo detectas, lanza excepción antes de parsear.
 
 import sys
 import re
+from urllib.parse import urlparse
 from requests_html import HTMLSession
 from real_headers import real_headers
 
@@ -251,17 +355,33 @@ class <Nombre>Extractor:
     def __init__(self, session=None, debug=False):
         self.session = session or HTMLSession()
         self.debug = debug
+        self.headers = None
 
     # --- API pública ---
     def soporta(self, url): ...
     def extraer(self, url): ...
+    def obtener_headers(self):
+        return dict(self.headers) if self.headers else None
     def extraer_y_mostrar(self, url): ...
 
     # --- Logging ---
     def _log(self, msg, level="info"): ...
 
     # --- HTTP ---
-    def _obtener_contenido(self, url): ...
+    def _obtener_contenido(self, url):
+        headers = real_headers()
+        response = self.session.get(url, headers=headers, allow_redirects=True)
+        response.raise_for_status()
+
+        self.headers = dict(headers)
+        self.headers["Referer"] = self._dominio_base(response.url)
+
+        return response.text
+
+    @staticmethod
+    def _dominio_base(url):
+        p = urlparse(url)
+        return f"{p.scheme}://{p.netloc}/"
 
     # --- Parsing ---
     def _extraer_video_src(self, contenido): ...
@@ -287,7 +407,7 @@ if __name__ == "__main__":
 
 ---
 
-## 11. Registro en el paquete
+## 12. Registro en el paquete
 
 En `src/streamvid/extractors/__init__.py`:
 
@@ -318,11 +438,15 @@ En `src/streamvid/cli.py`, añadir a `EXTRACTOR_INFO`:
 
 ---
 
-## 12. Checklist final
+## 13. Checklist final
 
 - [ ] Archivo en `extractors/<nombre>.py`, clase `<Nombre>Extractor`
 - [ ] `soporta(url)` sin peticiones HTTP
 - [ ] `extraer(url)` sin `print`, sin `sys.exit`, lanzando excepción al fallar
+- [ ] `obtener_headers()` devuelve dict o `None`
+- [ ] `self.headers = None` en `__init__`
+- [ ] `self.headers` relleno tras la primera petición
+- [ ] `Referer` calculado con `response.url` (dominio final tras redirects)
 - [ ] Métodos internos con prefijo `_`
 - [ ] `_log()` para todo mensaje, silenciado sin `debug`
 - [ ] `real_headers()` llamado **por petición**, no al importar
@@ -332,25 +456,31 @@ En `src/streamvid/cli.py`, añadir a `EXTRACTOR_INFO`:
 - [ ] Probado con URL válida: `streamvid "<url_válida>"`
 - [ ] Probado con URL inválida (sin salida, exit 1): `streamvid "<url_inválida>"; echo $?`
 - [ ] Probado con `--debug`: `streamvid --debug "<url_válida>"`
+- [ ] Probado con `--headers`: `streamvid --headers "<url_válida>"`
+- [ ] `obtener_headers()` devuelve `None` antes de `extraer()`
+- [ ] `obtener_headers()` devuelve dict después de `extraer()`
 
 ---
 
-## 13. Errores frecuentes
+## 14. Errores frecuentes
 
-| Error                                        | Causa                              | Solución                                       |
-| -------------------------------------------- | ---------------------------------- | ---------------------------------------------- |
-| `random_headers` al importar                 | Se generan una vez y se reutilizan | Llamar `real_headers()` en cada petición       |
-| Captura `favicon.png`                        | Regex demasiado amplio             | Añadir `_es_link_valido()`                     |
-| `print("Error: ...")` sin condicionar        | Se imprime siempre                 | Mover dentro de `if self.debug:`               |
-| `sys.exit(1)` dentro de `extraer()`          | Mata el proceso del CLI            | Solo `extraer_y_mostrar` puede usar `sys.exit` |
-| Métodos públicos que deberían ser privados   | Filtra la interfaz                 | Prefijo `_`                                    |
-| `extraer()` devuelve `None` en vez de lanzar | El CLI no distingue el fallo       | Lanzar `Exception`                             |
-| Detección de dominio duplicada en `cli.py`   | Se desincroniza                    | Usar `soporta()` del propio extractor          |
-| `main()` en vez de `_main()`                 | Colisiona con `cli.main`           | Renombrar a `_main`                            |
+| Error                                        | Causa                                 | Solución                                       |
+| -------------------------------------------- | ------------------------------------- | ---------------------------------------------- |
+| `random_headers` al importar                 | Se generan una vez y se reutilizan    | Llamar `real_headers()` en cada petición       |
+| Captura `favicon.png`                        | Regex demasiado amplio                | Añadir `_es_link_valido()`                     |
+| `print("Error: ...")` sin condicionar        | Se imprime siempre                    | Mover dentro de `if self.debug:`               |
+| `sys.exit(1)` dentro de `extraer()`          | Mata el proceso del CLI               | Solo `extraer_y_mostrar` puede usar `sys.exit` |
+| Métodos públicos que deberían ser privados   | Filtra la interfaz                    | Prefijo `_`                                    |
+| `extraer()` devuelve `None` en vez de lanzar | El CLI no distingue el fallo          | Lanzar `Exception`                             |
+| Detección de dominio duplicada en `cli.py`   | Se desincroniza                       | Usar `soporta()` del propio extractor          |
+| `main()` en vez de `_main()`                 | Colisiona con `cli.main`              | Renombrar a `_main`                            |
+| `obtener_headers()` devuelve referencia      | El usuario puede mutarlo              | Devolver `dict(self.headers)`                  |
+| `Referer` calculado con la URL original      | Fallará si hay redirects              | Usar `response.url` del último salto           |
+| `self.headers` se sobrescribe con recursión  | Prevalece el Referer del último salto | Añadir `if self.headers is None:`              |
 
 ---
 
-## 14. Nota sobre URLs de prueba
+## 15. Nota sobre URLs de prueba
 
 Las URLs de estos sitios cambian o desaparecen. Antes de reportar un fallo
 como bug del extractor:

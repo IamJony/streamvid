@@ -1,0 +1,107 @@
+{
+  "timestamp": "2026-10-14T22:42:09+00:00",
+  "total": 6,
+  "live": 6,
+  "headers_ok": 6,
+  "headers_total": 6,
+  "http_status": {
+    "mp4upload": 200,
+    "streamtape": 200,
+    "filemoon": 200,
+    "voe": 200,
+    "okru": 200,
+    "universal": 200
+  },
+  "extractores": {
+    "mp4upload": {
+      "live": true,
+      "info": "https://a3.mp4upload.com:183/d/xsxxb7myz3b4quuolkrue2qskkjumunvdu6aqbio5om7hq4hl6met5zgz24h7ame67tykzca/video.mp4",
+      "headers": {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Encoding": "gzip, deflate, sdch",
+        "Accept-Language": "en-US,en,q=0.8",
+        "Cache-Control": "max-age=0",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "User-Agent": "Opera/9.50 (Windows NT 5.1; U; nn)",
+        "Referer": "https://www.mp4upload.com/"
+      },
+      "error": null,
+      "tested_url": "https://www.mp4upload.com/embed-882s1404awa2.html"
+    },
+    "streamtape": {
+      "live": true,
+      "info": "https://strtape.cloud/get_video?id=jpYjkraO4ZhzVZk&expires=1792087724&ip=FROUKRWnDS9X&token=3UTXEPok9cXO&stream=1",
+      "headers": {
+        "Accept": "text/html, application/xhtml+xml, image/jxr, */*",
+        "Accept-Encoding": "gzip, deflate",
+        "Accept-Language": "en-US, en; q=0.7",
+        "Connection": "Keep-Alive",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.8810.3391 Safari/537.36 Edge/18.14383",
+        "Referer": "https://strtape.cloud/"
+      },
+      "error": null,
+      "tested_url": "https://streamtape.com/e/jpYjkraO4ZhzVZk/01.mp4"
+    },
+    "filemoon": {
+      "live": true,
+      "info": "https://WzrlxFlI3sZHGR0.cdn-centaurus.com/hls2/01/02566/t0skqlzi01j0_n/master.m3u8?t=vexqluJ1VgalakLGcfL54mg-UQDiSTk8YUVmAvrDDo0&s=1792017725&e=129600&f=12830019&srv=xOWbHUQf0O7R8qw&i=0.4&sp=500&p1=xOWbHUQf0O7R8qw&p2=xOWbHUQf0O7R8qw&asn=174",
+      "headers": {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Encoding": "gzip, deflate",
+        "Accept-Language": "en-us",
+        "Connection": "keep-alive",
+        "User-Agent": "Mozilla/5.0 (Macintosh; U; PPC Mac OS X; fr) AppleWebKit/418.9.1 (KHTML, like Gecko) Safari/419.3",
+        "Referer": "https://flaswish.com/"
+      },
+      "error": null,
+      "tested_url": "https://sfastwish.com/e/t0skqlzi01j0"
+    },
+    "voe": {
+      "live": true,
+      "info": "https://ugc-cdn-caching-n3b5csgaxlyqwc1mtx.cloudwindow-route.com/engine/hls2-c/01/10120/vnooybqweztc_,n,.urlset/master.m3u8?t=w1bCZHCKIXeMyKUycLfaAbAviVJ9ICn5jzhtIBVcdms&s=1792017726&e=14400&f=50603638&node=d53lEmEHQQNSXUGpvHAFDDt9O+aG63bsnBRZ0rNF4M0=&i=206.1&sp=2500&asn=274207&q=n&rq=TsJFZyzsUcGY38Z9ZqYPZMo0bYFOvFkLvLsq3lnR",
+      "headers": {
+        "Accept": "text/html, application/xhtml+xml, image/jxr, */*",
+        "Accept-Encoding": "gzip, deflate",
+        "Accept-Language": "en-US, en; q=0.7",
+        "Connection": "Keep-Alive",
+        "User-Agent": "Chrome (AppleWebKit/537.1; Chrome50.0; Windows NT 6.3) AppleWebKit/537.36 (KHTML like Gecko) Chrome/51.0.2704.79 Safari/537.36 Edge/14.14393",
+        "Referer": "https://megankiddifference.com/"
+      },
+      "error": null,
+      "tested_url": "https://voe.sx/e/vnooybqweztc"
+    },
+    "okru": {
+      "live": true,
+      "info": "https://vd370.okcdn.ru/expires/1792104127587/clientType/0/srcIp/206.1.92.24/type/2/mid/6127798127135/id/1216539855584/ms/95.163.35.83/zs/43/srcAg/CHROME/urls/185.180.203.122/oq/0/pr/10/ct/28/sig/R6_JrX8Ck5A/ondemand/hls4_1216539855584.CJ-U7OmrsgFAn6rE68wRUAqSMMxWDjC4ag.m3u8",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Referer": "https://ok.ru/",
+        "Upgrade-Insecure-Requests": "1",
+        "Accept-Encoding": "gzip, deflate, sdch",
+        "Connection": "keep-alive",
+        "Cache-Control": "max-age=0"
+      },
+      "error": null,
+      "tested_url": "https://ok.ru/videoembed/6127798127135"
+    },
+    "universal": {
+      "live": true,
+      "info": "https://puyjwh3anu5e.tnmr.org/hls2/03/04455/k60tod6pn7zk_h/master.m3u8?t=8kcQJHP74STRNOSMRvgOO408cuQk3FyFKGKSTIqfotk&s=1792017728&e=28800&f=22275091&i=0.3&sp=0",
+      "headers": {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Encoding": "gzip, deflate, sdch",
+        "Accept-Language": "en-US,en,q=0.8",
+        "Cache-Control": "max-age=0",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "User-Agent": "Opera/9.80 (X11; Linux i686; U; en) Presto/2.2.15 Version/10.00",
+        "Referer": "https://luluvdo.com/"
+      },
+      "error": null,
+      "tested_url": "https://luluvdo.com/e/k60tod6pn7zk"
+    }
+  }
+}

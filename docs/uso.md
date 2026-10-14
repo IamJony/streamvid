@@ -3,7 +3,7 @@
 ## Sintaxis
 
 ```
-streamvid [--extractor EXTRACTOR] [--debug] [--info] [--list] [--test] <URL>
+streamvid [--extractor EXTRACTOR] [--debug] [--info] [--list] [--test] [--headers] <URL>
 ```
 
 ## Argumentos posicionales
@@ -157,6 +157,93 @@ Info: Autotest offline de extractores...
 Útil para verificar una instalación sin depender de que los sitios externos
 estén disponibles.
 
+### `--headers`
+
+Imprime los headers HTTP que el CDN espera para servir el video, junto con el
+enlace. Esencial para reproducir con mpv, ffmpeg o yt-dlp cuando el CDN exige
+un `Referer` concreto.
+
+```bash
+streamvid --headers "https://luluvdo.com/e/k60tod6pn7zk"
+```
+
+Salida:
+
+```
+# User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 ...
+# Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+# Accept-Language: en-US,en;q=0.9
+# Referer: https://luluvdo.com/
+https://puyjwh3anu5e.tnmr.org/hls2/03/04455/k60tod6pn7zk_h/master.m3u8?t=...
+```
+
+Las líneas con `# ` son comentarios válidos para bash. El enlace va al final,
+sin prefijo. Así puedes hacer pipes sin que los headers rompan la salida.
+
+#### ¿Cuándo usar `--headers`?
+
+Cuando el CDN devuelve `403 Forbidden` al abrir el enlace directamente, o
+cuando pasas el enlace a un reproductor y no arranca:
+
+```bash
+# Sin headers → 403 o nada
+streamvid "$URL" | xargs mpv
+
+# Con headers → reproduce
+streamvid --headers "$URL"
+```
+
+#### Integración con mpv
+
+```bash
+OUT=$(streamvid --headers "$URL" 2>/dev/null)
+LINK=$(echo "$OUT" | grep -v '^#')
+UA=$(echo "$OUT" | grep '^# User-Agent:' | cut -d' ' -f3-)
+REF=$(echo "$OUT" | grep '^# Referer:' | cut -d' ' -f3)
+
+mpv --user-agent="$UA" --referrer="$REF" "$LINK"
+```
+
+#### Integración con ffmpeg
+
+```bash
+OUT=$(streamvid --headers "$URL" 2>/dev/null)
+LINK=$(echo "$OUT" | grep -v '^#')
+REF=$(echo "$OUT" | grep '^# Referer:' | cut -d' ' -f3)
+UA=$(echo "$OUT" | grep '^# User-Agent:' | cut -d' ' -f3-)
+
+ffmpeg -headers "Referer: $REF\r\nUser-Agent: $UA\r\n" -i "$LINK" -c copy out.mp4
+```
+
+#### Integración con VLC
+
+VLC no acepta `--referrer` por CLI, así que se necesita un archivo `.m3u`
+temporal con los headers embebidos. El script `scripts/play.py` del repo
+hace esto automáticamente.
+
+#### Solo el Referer
+
+```bash
+streamvid --headers "$URL" 2>/dev/null | grep '^# Referer:' | cut -d' ' -f3
+```
+
+Salida:
+
+```
+https://luluvdo.com/
+```
+
+#### Solo el link (ignorando los headers)
+
+```bash
+streamvid --headers "$URL" 2>/dev/null | grep -v '^#'
+```
+
+#### Nota
+
+Si un extractor no implementa `obtener_headers()`, el flag simplemente se
+ignora y solo se imprime el link. No rompe nada.
+
 ### `-h, --help`
 
 Muestra la ayuda completa.
@@ -169,10 +256,10 @@ streamvid --help
 
 ## Códigos de salida
 
-| Código | Significado |
-|---|---|
-| `0` | Éxito: enlace extraído y mostrado en `stdout` |
-| `1` | Fallo: no se pudo extraer, URL inválida o error de red |
+| Código | Significado                                            |
+| ------ | ------------------------------------------------------ |
+| `0`    | Éxito: enlace extraído y mostrado en `stdout`          |
+| `1`    | Fallo: no se pudo extraer, URL inválida o error de red |
 
 Ejemplo en scripts:
 
@@ -192,11 +279,18 @@ fi
 - **Fallo sin `--debug`** → nada en `stdout`, exit `1`
 - **Fallo con `--debug`** → logs en `stderr` con el detalle del error
 - **Con `--info`** → mensajes informativos en `stdout` + el enlace
+- **Con `--headers`** → cabeceras con `# ` + enlace
 
 Eso permite usar Streamvid en pipes:
 
 ```bash
 streamvid "$URL" | xargs mpv
+```
+
+Y con headers:
+
+```bash
+streamvid --headers "$URL" 2>/dev/null | grep -v '^#' | xargs mpv
 ```
 
 ---
@@ -227,6 +321,24 @@ streamvid -e universal --debug "$URL"
 streamvid --info --debug "$URL"
 ```
 
+### Con headers (para CDN que exigen Referer)
+
+```bash
+streamvid --headers "$URL"
+```
+
+### Headers + debug (para depurar problemas de reproducción)
+
+```bash
+streamvid --headers --debug "$URL"
+```
+
+### Solo el Referer
+
+```bash
+streamvid --headers "$URL" 2>/dev/null | grep '^# Referer:' | cut -d' ' -f3
+```
+
 ### Comprobar la instalación sin red
 
 ```bash
@@ -242,6 +354,37 @@ for url in "https://voe.sx/e/abc" "https://filemoon.sx/e/def"; do
 done
 ```
 
+### Procesar varias URLs y guardar headers por cada una
+
+```bash
+for url in "https://voe.sx/e/abc" "https://luluvdo.com/e/xyz"; do
+    echo "=== $url ==="
+    streamvid --headers "$url"
+    echo
+done
+```
+
+### Alias para reproducir con mpv automáticamente
+
+Añade esto a tu `~/.bashrc`:
+
+```bash
+svplay() {
+    local out link ref ua
+    out=$(streamvid --headers "$1" 2>/dev/null) || { echo "Fallo al extraer"; return 1; }
+    link=$(echo "$out" | grep -v '^#')
+    ref=$(echo "$out" | grep '^# Referer:' | cut -d' ' -f3)
+    ua=$(echo "$out" | grep '^# User-Agent:' | cut -d' ' -f3-)
+    mpv --user-agent="$ua" --referrer="$ref" "$link"
+}
+```
+
+Y luego:
+
+```bash
+svplay "https://luluvdo.com/e/k60tod6pn7zk"
+```
+
 ---
 
 ## Uso desde Python
@@ -255,6 +398,8 @@ cli.main(["--list"])
 cli.main(["--test"])
 cli.main(["https://filemoon.sx/e/abc"])
 cli.main(["-e", "voe", "--debug", "https://voe.sx/e/abc"])
+cli.main(["--headers", "https://luluvdo.com/e/k60tod6pn7zk"])
+cli.main(["--headers", "--debug", "https://luluvdo.com/e/k60tod6pn7zk"])
 ```
 
 Útil para invocar el CLI desde otro script sin usar `subprocess`.

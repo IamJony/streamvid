@@ -3,6 +3,7 @@
 
 import sys
 import re
+from urllib.parse import urlparse
 from requests_html import HTMLSession
 from real_headers import real_headers
 
@@ -11,6 +12,7 @@ class MP4UploadExtractor:
     def __init__(self, session=None, debug=False):
         self.session = session or HTMLSession()
         self.debug = debug
+        self.headers = None
 
     def _log(self, msg, level="info"):
         if not self.debug:
@@ -38,38 +40,43 @@ class MP4UploadExtractor:
         raise ValueError("URL no válida para mp4upload")
 
     def _es_pagina_login(self, response):
-        """MP4Upload redirige a /login cuando el video no existe."""
-        # URL final tras redirects
         if "/login" in response.url:
             return True
-        # Contenido típico de la página de login
         html = response.text
         if 'action="/login"' in html or 'name="login"' in html:
             return True
-        if "<title>mp4upload" in html.lower() and "login" not in html.lower() and "embed" not in response.url:
-            # heurística extra: si no es embed y no hay video, sospechoso
-            pass
         return False
 
     def obtener_contenido(self, url):
         self._log(f"descargando: {url}", "step")
         try:
-            response = self.session.get(url, headers=real_headers())
+            headers = real_headers()
+            response = self.session.get(url, headers=headers, allow_redirects=True)
             response.raise_for_status()
 
-            # Si nos redirigieron a login → el video no existe
             if self._es_pagina_login(response):
                 self._log(f"redirigido a login ({response.url}) → video no existe", "fail")
                 raise Exception("Video no encontrado (redirigido a /login)")
 
             self._log(f"HTML obtenido ({len(response.text)} bytes)", "ok")
+
+            self.headers = dict(headers)
+            self.headers["Referer"] = self._dominio_base(response.url)
+
             return response.text
         except Exception as e:
             self._log(f"error de descarga: {e}", "fail")
             raise
 
+    @staticmethod
+    def _dominio_base(url):
+        p = urlparse(url)
+        return f"{p.scheme}://{p.netloc}/"
+
+    def obtener_headers(self):
+        return dict(self.headers) if self.headers else None
+
     def _es_link_valido(self, link):
-        """Rechaza favicons, imágenes, css, js... Solo acepta mp4/m3u8."""
         if not link or not re.match(r'https?://', link):
             return False
         if re.search(r'\.(png|jpg|jpeg|gif|svg|ico|css|js|woff2?)(\?|$)', link, re.I):

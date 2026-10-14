@@ -5,6 +5,7 @@ import sys
 import re
 import html
 import json
+from urllib.parse import urlparse
 from requests_html import HTMLSession
 from real_headers import real_headers
 
@@ -15,6 +16,7 @@ class OkRuExtractor:
     def __init__(self, session=None, debug=False):
         self.session = session or HTMLSession()
         self.debug = debug
+        self.headers = None
 
         self.options_pattern = re.compile(
             r'data-module=["\']OKVideo["\'][^>]*?data-options="([^"]*)"',
@@ -72,6 +74,9 @@ class OkRuExtractor:
                 print(f"[okru] error: {e}", file=sys.stderr)
             sys.exit(1)
 
+    def obtener_headers(self):
+        return dict(self.headers) if self.headers else None
+
     # ---------- HTTP ----------
 
     def _build_headers(self):
@@ -93,8 +98,9 @@ class OkRuExtractor:
     def _obtener_html(self, url):
         self._log(f"descargando: {url}", "step")
         try:
+            headers = self._build_headers()
             response = self.session.get(
-                url, headers=self._build_headers(), allow_redirects=True
+                url, headers=headers, allow_redirects=True
             )
             response.raise_for_status()
             self._log(
@@ -103,10 +109,19 @@ class OkRuExtractor:
             )
             if "ondemandHls" not in response.text:
                 self._log("el HTML NO contiene 'ondemandHls'", "warn")
+
+            self.headers = dict(headers)
+            self.headers["Referer"] = self._dominio_base(response.url)
+
             return response.text
         except Exception as e:
             self._log(f"error de descarga: {e}", "fail")
             raise Exception(f"Error al descargar la página: {e}")
+
+    @staticmethod
+    def _dominio_base(url):
+        p = urlparse(url)
+        return f"{p.scheme}://{p.netloc}/"
 
     # ---------- Parsing ----------
 
