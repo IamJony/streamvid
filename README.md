@@ -31,6 +31,7 @@ También incluye una CLI para uso directo desde la terminal.
 pip install https://github.com/IamJony/eval-unpacker/releases/download/eval_unpacker-0.1.0/eval_unpacker-0.1.0-py3-none-any.whl
 ```
 
+## Clona el repositorio de streamvid
 Requiere Python 3.8+.
 
 ```bash
