@@ -18,7 +18,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from streamvid import EXTRACTORS
+from streamvid.cli import detect_extractor, EXTRACTOR_INFO
 
 
 # ---------- Detección de reproductores por SO ----------
@@ -83,26 +83,31 @@ def listar_reproductores():
         print(f"  {marca} {nombre}{extra}")
 
 
+def listar_extractores():
+    """Imprime los extractores registrados y su ejemplo."""
+    print(f"Extractores disponibles:\n")
+    for key, info in EXTRACTOR_INFO.items():
+        marca = "★" if key != "universal" else "…"
+        print(f"  {marca} {key:<12} {info['example']}")
+
+
 # ---------- Extracción ----------
 
 def extraer(url):
-    """Prueba cada extractor hasta encontrar el que soporte la URL."""
-    for cls in EXTRACTORS:
-        extractor = cls()
-        try:
-            if not extractor.soporta(url):
-                continue
-        except AttributeError:
-            continue
+    """Auto-detecta el extractor usando la misma lógica que el CLI."""
+    key = detect_extractor(url)
+    info = EXTRACTOR_INFO[key]
+    cls = info["class"]
 
-        print(f"[+] Usando extractor: {cls.__name__}")
-        link = extractor.extraer(url)
-        headers = None
-        if hasattr(extractor, "obtener_headers"):
-            headers = extractor.obtener_headers()
-        return cls.__name__, link, headers
+    print(f"[+] Usando extractor: {cls.__name__}")
 
-    raise RuntimeError(f"Ningún extractor reconoce la URL: {url}")
+    extractor = cls()
+    link = extractor.extraer(url)
+    headers = None
+    if hasattr(extractor, "obtener_headers"):
+        headers = extractor.obtener_headers()
+
+    return cls.__name__, link, headers
 
 
 # ---------- Reproducción ----------
@@ -209,8 +214,13 @@ def main():
     parser.add_argument("url", nargs="?", help="URL del video")
     parser.add_argument("--player", choices=REPRODUCTORES,
                         help="Forzar un reproductor concreto")
+    parser.add_argument("--extractor",
+                        choices=list(EXTRACTOR_INFO.keys()),
+                        help="Forzar un extractor concreto")
     parser.add_argument("--list", action="store_true",
                         help="Listar reproductores disponibles y salir")
+    parser.add_argument("--list-extractors", action="store_true",
+                        help="Listar extractores disponibles y salir")
     parser.add_argument("--no-play", action="store_true",
                         help="Solo extraer, no reproducir")
     args = parser.parse_args()
@@ -219,19 +229,34 @@ def main():
         listar_reproductores()
         return 0
 
+    if args.list_extractors:
+        listar_extractores()
+        return 0
+
     if not args.url:
         parser.print_help()
         return 1
 
     # 1. Extraer
     try:
-        clase, link, headers = extraer(args.url)
+        if args.extractor:
+            info = EXTRACTOR_INFO[args.extractor]
+            cls = info["class"]
+            print(f"[+] Usando extractor forzado: {cls.__name__}")
+            extractor = cls()
+            link = extractor.extraer(args.url)
+            headers = (extractor.obtener_headers()
+                       if hasattr(extractor, "obtener_headers") else None)
+            clase = cls.__name__
+        else:
+            clase, link, headers = extraer(args.url)
     except Exception as e:
         print(f"[!] Error al extraer: {e}", file=sys.stderr)
         return 1
 
     print()
-    print(f"Link:    {link}")
+    print(f"Extractor: {clase}")
+    print(f"Link:      {link}")
     if headers:
         for k, v in headers.items():
             print(f"  {k}: {v}")

@@ -6,6 +6,7 @@ from .okru import OkRuExtractor
 from .streamtape import StreamtapeExtractor
 from .universal import UniversalExtractor
 from .voe import VoeExtractor
+from .mixdrop import MixdropExtractor
 
 EXTRACTORS = [
     FileMoonExtractor,
@@ -14,6 +15,7 @@ EXTRACTORS = [
     StreamtapeExtractor,
     VoeExtractor,
     UniversalExtractor,
+    MixdropExtractor,
 ]
 
 
@@ -24,5 +26,6 @@ __all__ = [
     "StreamtapeExtractor",
     "UniversalExtractor",
     "VoeExtractor",
+    "MixdropExtractor",
     "EXTRACTORS",
 ]

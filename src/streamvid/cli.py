@@ -11,6 +11,7 @@ from .extractors import (
     StreamtapeExtractor,
     OkRuExtractor,
     UniversalExtractor,
+    MixdropExtractor,
 )
 
 
@@ -49,6 +50,11 @@ EXTRACTOR_INFO = {
         'name': 'OkRu',
         'class': OkRuExtractor,
         'example': 'https://ok.ru/videoembed/6127798127135'
+    },
+    'mixdrop': {
+        'name': 'Mixdrop',
+        'class': MixdropExtractor,
+        'example': 'https://mxdrop.to/e/4d99e8q1sn6jp'
     },
     'universal': {
         'name': 'Universal',

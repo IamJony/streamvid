@@ -9,6 +9,7 @@ from .extractors import (
     StreamtapeExtractor,
     UniversalExtractor,
     VoeExtractor,
+    MixdropExtractor,
     EXTRACTORS,
 )
 
@@ -21,5 +22,6 @@ __all__ = [
     "StreamtapeExtractor",
     "UniversalExtractor",
     "VoeExtractor",
+    "MixdropExtractor"
     "EXTRACTORS",
 ]

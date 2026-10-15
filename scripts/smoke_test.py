@@ -18,20 +18,22 @@ from string import Template
 import requests
 
 from streamvid import (
-    FileMoonExtractor,
+ #   FileMoonExtractor,
     MP4UploadExtractor,
     OkRuExtractor,
     StreamtapeExtractor,
     UniversalExtractor,
+    MixdropExtractor,
     VoeExtractor,
 )
 
 EXTRACTOR_MAP = {
     "mp4upload":  MP4UploadExtractor,
     "streamtape": StreamtapeExtractor,
-    "filemoon":   FileMoonExtractor,
+#    "filemoon":   FileMoonExtractor,
     "voe":        VoeExtractor,
     "okru":       OkRuExtractor,
+    "mixdrop":	  MixdropExtractor,
     "universal":  UniversalExtractor,
 }
 

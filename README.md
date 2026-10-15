@@ -21,7 +21,8 @@ También incluye una CLI para uso directo desde la terminal.
 | FileMoon             | `filemoon`   | `filemoon.sx/e/xxxxx`, `sfastwish.com/e/xxxxx` |
 | Voé                  | `voe`        | `voe.sx/e/xxxxx`                               |
 | OK.ru                | `okru`       | `ok.ru/videoembed/xxxxx`                       |
-| Universal | `universal`  | Cualquier otro sitio (luluvdo, vidhidevip, doodstream)            |
+| Universal | `universal`  | Cualquier otro sitio (luluvdo, vidhidevip)            |
+| Mixdrop | mixdrop | mxdrop.to/e/xxxxxx |
 
 ## Instalación
 

@@ -18,6 +18,7 @@ from streamvid import (
     StreamtapeExtractor,
     UniversalExtractor,
     VoeExtractor,
+    MixdropExtractor,
     EXTRACTORS,
 )
 ```
