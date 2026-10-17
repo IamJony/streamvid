@@ -22,6 +22,6 @@ __all__ = [
     "StreamtapeExtractor",
     "UniversalExtractor",
     "VoeExtractor",
-    "MixdropExtractor"
+    "MixdropExtractor",
     "EXTRACTORS",
 ]

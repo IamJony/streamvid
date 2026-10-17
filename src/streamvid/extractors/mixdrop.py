@@ -3,11 +3,11 @@
 
 import sys
 import re
-import subprocess
-import os
 from urllib.parse import urlparse
 from requests_html import HTMLSession
 from real_headers import real_headers
+
+from ..unpacker import unpack_eval_script
 
 
 class MixdropExtractor:
@@ -16,8 +16,7 @@ class MixdropExtractor:
     Técnica: el reproductor embebe un script ofuscado con el packer
     de Dean Edwards (eval(function(p,a,c,k,e,d)...)) junto a otras
     declaraciones MDCore (ref, sublangs, etc.). Se aísla el bloque
-    <script> completo, se guarda en un temporal y se desempaca con
-    'eval-unpacker'.
+    <script> completo y se desempaca con `unpack_eval_script`.
 
     Tras desempacar se reconstruye MDCore.wurl, que apunta al MP4
     progresivo (no HLS) servido desde dominios tipo mxcontent.net
@@ -27,9 +26,8 @@ class MixdropExtractor:
     # Dominios soportados
     DOMINIOS = ("mxdrop", "mixdrop")
 
-    def __init__(self, session=None, temp_file='/tmp/mixdrop_eval.js', debug=False):
+    def __init__(self, session=None, debug=False):
         self.session = session or HTMLSession()
-        self.temp_file = temp_file
         self.debug = debug
         self.headers = None
 
@@ -46,10 +44,11 @@ class MixdropExtractor:
             if not script:
                 raise Exception("No se encontró el script con eval")
 
-            self._guardar_script(script)
-            unpacked = self._ejecutar_eval_unpack()
-            video_link = self._extraer_video_link(unpacked)
+            unpacked = unpack_eval_script(script, debug=self.debug)
+            if not unpacked:
+                raise Exception("eval-unpacker no pudo desempaquetar el script")
 
+            video_link = self._extraer_video_link(unpacked)
             if not video_link:
                 raise Exception("No se pudo encontrar el enlace del video")
 
@@ -61,8 +60,6 @@ class MixdropExtractor:
         except Exception as e:
             self._log(f"error fatal: {e}", "fail")
             raise
-        finally:
-            self._limpiar_temp()
 
     def extraer_y_mostrar(self, url, mostrar_headers=False):
         """Uso standalone. Imprime el link (stdout) y, opcionalmente,
@@ -121,7 +118,7 @@ class MixdropExtractor:
         p = urlparse(url)
         return f"{p.scheme}://{p.netloc}/"
 
-    # ---------- Eval unpacker ----------
+    # ---------- Parsing ----------
 
     def _buscar_script_eval(self, html):
         """Aísla el bloque <script> que contiene el packer de Dean Edwards.
@@ -129,7 +126,7 @@ class MixdropExtractor:
         En Mixdrop el eval() no está solo: comparte <script> con otras
         declaraciones MDCore.ref, MDCore.sublangs, etc. Por eso capturamos
         el contenido completo del <script> que contiene el eval y lo
-        pasamos tal cual a eval-unpacker (con las etiquetas <script>).
+        pasamos tal cual a `unpack_eval_script` (con las etiquetas <script>).
         """
         self._log("buscando script con eval(function...)", "step")
 
@@ -146,34 +143,6 @@ class MixdropExtractor:
 
         self._log("no se encontró script eval", "warn")
         return None
-
-    def _guardar_script(self, script_contenido):
-        self._log(f"guardando script en {self.temp_file}", "step")
-        try:
-            with open(self.temp_file, 'w', encoding='utf-8') as f:
-                f.write(script_contenido)
-            self._log("script guardado", "ok")
-        except Exception as e:
-            self._log(f"error al guardar: {e}", "fail")
-            raise Exception(f"Error al guardar script: {e}")
-
-    def _ejecutar_eval_unpack(self):
-        self._log("ejecutando eval-unpacker", "step")
-        try:
-            resultado = subprocess.run(
-                ['eval-unpacker', self.temp_file],
-                capture_output=True, text=True, check=True
-            )
-            self._log(f"eval-unpack OK ({len(resultado.stdout)} bytes)", "ok")
-            return resultado.stdout
-        except subprocess.CalledProcessError as e:
-            self._log(f"eval-unpacker falló: {e.stderr}", "fail")
-            raise Exception(f"Error al ejecutar eval-unpack: {e.stderr}")
-        except FileNotFoundError:
-            self._log("eval-unpacker no encontrado", "fail")
-            raise Exception("No se encuentra 'eval-unpacker'. ¿Está instalado?")
-
-    # ---------- Extracción del link ----------
 
     def _extraer_video_link(self, texto):
         """Busca MDCore.wurl en el JS desempacado.
@@ -223,16 +192,6 @@ class MixdropExtractor:
         ):
             return False
         return bool(re.search(r'\.(mp4|m3u8)(\?|$)', link, re.I))
-
-    # ---------- Limpieza ----------
-
-    def _limpiar_temp(self):
-        try:
-            if os.path.exists(self.temp_file):
-                os.remove(self.temp_file)
-                self._log(f"temp eliminado: {self.temp_file}")
-        except Exception:
-            pass
 
 
 def _main():

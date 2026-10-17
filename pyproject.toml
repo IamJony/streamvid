@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "streamvid"
-version = "1.0.0"
+version = "1.0.3"
 description = "Video extractor from multiple streaming platforms"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -23,6 +23,7 @@ dependencies = [
     "requests_html",
     "real_headers",
     "lxml_html_clean",
+    "eval-unpacker @ https://github.com/IamJony/eval-unpacker/releases/download/eval_unpacker-0.1.0/eval_unpacker-0.1.0-py3-none-any.whl",
 ]
 
 [project.urls]

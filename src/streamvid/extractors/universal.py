@@ -3,17 +3,17 @@
 
 import sys
 import re
-import os
 import json
 import base64
 import binascii
 import random
 import string
 import time
-import subprocess
 from urllib.parse import urlparse, urljoin
 from requests_html import HTMLSession
 from real_headers import real_headers
+
+from ..unpacker import unpack_eval_script
 
 
 class UniversalExtractor:
@@ -23,9 +23,8 @@ class UniversalExtractor:
     el primer enlace válido que encuentre.
     """
 
-    def __init__(self, session=None, temp_file='/tmp/eval.js', debug=False):
+    def __init__(self, session=None, debug=False):
         self.session = session or HTMLSession()
-        self.temp_file = temp_file
         self.debug = debug
         self.headers = None
 
@@ -141,13 +140,6 @@ class UniversalExtractor:
         p = urlparse(url)
         return f"{p.scheme}://{p.netloc}/"
 
-    def _limpiar_temp(self):
-        try:
-            if os.path.exists(self.temp_file):
-                os.remove(self.temp_file)
-        except Exception:
-            pass
-
     # ============================================================
     #        ESTRATEGIA 5: DoodStream (pass_md5)
     # ============================================================
@@ -230,18 +222,6 @@ class UniversalExtractor:
         m = re.search(patron, html, re.DOTALL | re.IGNORECASE)
         return m.group() if m else None
 
-    def _ejecutar_eval_unpack(self):
-        try:
-            resultado = subprocess.run(
-                ['eval-unpacker', self.temp_file],
-                capture_output=True, text=True, check=True
-            )
-            return resultado.stdout
-        except subprocess.CalledProcessError as e:
-            raise Exception(f"Error al ejecutar eval-unpack: {e.stderr}")
-        except FileNotFoundError:
-            raise Exception("No se encuentra 'eval-unpacker'. ¿Está instalado?")
-
     @staticmethod
     def _extraer_m3u8(texto):
         m = re.search(r'(https?://[^"\'\s]+master\.m3u8[^"\'\s]*)', texto)
@@ -256,13 +236,10 @@ class UniversalExtractor:
             return None
 
         self._log("Estrategia eval-unpack: script encontrado")
-        try:
-            with open(self.temp_file, 'w', encoding='utf-8') as f:
-                f.write(script)
-            unpacked = self._ejecutar_eval_unpack()
-            return self._extraer_m3u8(unpacked) or self._extraer_mp4(unpacked)
-        finally:
-            self._limpiar_temp()
+        unpacked = unpack_eval_script(script, debug=self.debug)
+        if not unpacked:
+            return None
+        return self._extraer_m3u8(unpacked) or self._extraer_mp4(unpacked)
 
     # ============================================================
     #                  ESTRATEGIA 2: VOE

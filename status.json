@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-15T23:11:11+00:00",
+  "timestamp": "2026-10-17T16:38:15+00:00",
   "total": 6,
   "live": 6,
   "headers_ok": 6,
@@ -15,13 +15,15 @@
   "extractores": {
     "mp4upload": {
       "live": true,
-      "info": "https://a3.mp4upload.com:183/d/xsxxb7myz3b4quuolkrue2qskkjumunvdu6aqbio5om7hq4hl5eavqvqgimcpjsl77rrms4d/video.mp4",
+      "info": "https://a3.mp4upload.com:183/d/xsxxb7myz3b4quuolkrue2qskkjumunvdu6aqbio5om7hq4hl5i3jabe6owvvgdfrahayfsq/video.mp4",
       "headers": {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
         "Accept-Encoding": "gzip, deflate",
-        "Accept-Language": "en-us",
         "Connection": "keep-alive",
-        "User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 6.0; nl) AppleWebKit/522.11.3 (KHTML, like Gecko) Version/3.0 Safari/522.11.3",
+        "Upgrade-Insecure-Requests": "1",
+        "Cache-Control": "max-age=0",
+        "User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 6.0; de; rv:1.9.0.15) Gecko/2009101601 Firefox 2.1 (.NET CLR 3.5.30729)",
         "Referer": "https://www.mp4upload.com/"
       },
       "error": null,
@@ -29,15 +31,13 @@
     },
     "streamtape": {
       "live": true,
-      "info": "https://strtape.cloud/get_video?id=jpYjkraO4ZhzVZk&expires=1792175867&ip=FROUKRWnDS9X&token=GkIzZe1Sy_hy&stream=1",
+      "info": "https://strtape.cloud/get_video?id=jpYjkraO4ZhzVZk&expires=1792325091&ip=FROUKRWnDS9X&token=xV11KtugadcO&stream=1",
       "headers": {
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Encoding": "gzip, deflate, sdch",
-        "Accept-Language": "en-US,en,q=0.8",
-        "Cache-Control": "max-age=0",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-        "User-Agent": "Opera/8.50 (Windows ME; U; en)",
+        "Accept": "text/html, application/xhtml+xml, image/jxr, */*",
+        "Accept-Encoding": "gzip, deflate",
+        "Accept-Language": "en-US, en; q=0.7",
+        "Connection": "Keep-Alive",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/17.17134",
         "Referer": "https://strtape.cloud/"
       },
       "error": null,
@@ -45,15 +45,15 @@
     },
     "voe": {
       "live": true,
-      "info": "https://ugc-cdn-caching-n3neuvwjq4hpqohwfe.cloudwindow-route.com/engine/hls2/01/10120/vnooybqweztc_,n,.urlset/master.m3u8?t=QazgkCW7OAxGw--9QHvKBiDfRUMOTgiCXEQgLQLHkFk&s=1792105868&e=14400&f=50603638&node=d53lEmEHQQNSXUGpvHAFDDt9O+aG63bsnBRZ0rNF4M0=&i=206.1&sp=2500&asn=274207&q=n&rq=LLZHzyMXGRREn3Hv4bY5UAuipG9ZEDvmQvlBJE3s",
+      "info": "https://ugc-cdn-caching-n3neuvwjq4hpqohwfe.cloudwindow-route.com/engine/hls2/01/10120/vnooybqweztc_,n,.urlset/master.m3u8?t=jyJHVfVhKXDWOg8vsqs19k8wP1eoXJcg6LrB0NR0PPU&s=1792255092&e=14400&f=50603638&node=d53lEmEHQQNSXUGpvHAFDDt9O+aG63bsnBRZ0rNF4M0=&i=0.1&sp=2500&asn=274207&q=n&rq=KdjnTl1hsfp5FrHQxcfjlIAwTvffxZ3aDJk7Rub9",
       "headers": {
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Accept-Encoding": "gzip, deflate",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Encoding": "gzip, deflate, sdch",
+        "Accept-Language": "en-US,en;q=0.8",
+        "Cache-Control": "max-age=0",
         "Connection": "keep-alive",
         "Upgrade-Insecure-Requests": "1",
-        "Cache-Control": "max-age=0",
-        "User-Agent": "Mozilla/5.0 (Windows; U; Win98; en-US; rv:1.7.6) Gecko/20050317 Firefox/1.0.2 (ax)",
+        "User-Agent": "Mozilla/5.0 (Linux; Ubuntu 14.04 like Android 4.4) AppleWebKit/537.36 Chromium/35.0.1870.2 Mobile Safari/537.36",
         "Referer": "https://megankiddifference.com/"
       },
       "error": null,
@@ -61,14 +61,15 @@
     },
     "okru": {
       "live": true,
-      "info": "https://vd473.okcdn.ru/expires/1792192269673/clientType/0/srcIp/206.1.92.24/type/2/mid/6127798127135/id/1216539855584/ms/185.180.203.122/zs/43/srcAg/CHROME/urls/95.163.35.83/oq/0/pr/10/ct/28/sig/vf8-9yc5eGY/ondemand/hls4_1216539855584.CJ-U7OmrsgFAn6rE68wRUAqSMMxWDjC4ag.m3u8",
+      "info": "https://vd473.okcdn.ru/expires/1792341493030/clientType/0/srcIp/206.1.92.24/type/2/mid/6127798127135/id/1216539855584/ms/185.180.203.122/zs/43/srcAg/CHROME/urls/178.237.23.0/oq/0/pr/10/ct/28/sig/A9zBrFSazDc/ondemand/hls4_1216539855584.CJ-U7OmrsgFAn6rE68wRUAqSMMxWDjC4ag.m3u8",
       "headers": {
         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
         "Referer": "https://ok.ru/",
         "Upgrade-Insecure-Requests": "1",
-        "Accept-Encoding": "gzip, deflate",
+        "Accept-Encoding": "gzip, deflate, sdch",
+        "Cache-Control": "max-age=0",
         "Connection": "keep-alive"
       },
       "error": null,
@@ -76,15 +77,15 @@
     },
     "mixdrop": {
       "live": true,
-      "info": "https://a-delivery36.mxcontent.net/v2/4d99e8q1sn6jp.mp4?s=e_MdaZcMVNXMF24Vc1Audg&e=1792127470&_t=1792115653",
+      "info": "https://a-delivery36.mxcontent.net/v2/4d99e8q1sn6jp.mp4?s=0Mgi_cM6XgVJk6t4l1SwnA&e=1792276693&_t=1792262284",
       "headers": {
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Accept-Encoding": "gzip, deflate",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Encoding": "gzip, deflate, sdch",
+        "Accept-Language": "en-US,en,q=0.8",
+        "Cache-Control": "max-age=0",
         "Connection": "keep-alive",
         "Upgrade-Insecure-Requests": "1",
-        "Cache-Control": "max-age=0",
-        "User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 (.NET CLR 3.5.30729)",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.106 Safari/537.36 OPR/38.0.2220.41",
         "Referer": "https://mxdrop.click/"
       },
       "error": null,
@@ -92,15 +93,15 @@
     },
     "universal": {
       "live": true,
-      "info": "https://puyjwh3anu5e.tnmr.org/hls2/03/04455/k60tod6pn7zk_h/master.m3u8?t=SghswxizePfDo6nNwHocuUht9IFYMhEslELa7ip1mJg&s=1792105870&e=28800&f=22275091&i=0.3&sp=0",
+      "info": "https://puyjwh3anu5e.tnmr.org/hls2/03/04455/k60tod6pn7zk_h/master.m3u8?t=GfUediItvbsBebC-hjkO3BMo3wKoS7javCIqlhN8XP8&s=1792255094&e=28800&f=22275091&i=0.3&sp=0",
       "headers": {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
         "Accept-Encoding": "gzip, deflate, sdch",
         "Accept-Language": "en-US,en;q=0.8",
-        "Connection": "keep-alive",
         "Cache-Control": "max-age=0",
+        "Connection": "keep-alive",
         "Upgrade-Insecure-Requests": "1",
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11",
+        "User-Agent": "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/49.0.2623.108 Chrome/49.0.2623.108 Safari/537.36",
         "Referer": "https://luluvdo.com/"
       },
       "error": null,
