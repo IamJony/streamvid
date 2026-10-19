@@ -10,7 +10,8 @@ import random
 import string
 import time
 from urllib.parse import urlparse, urljoin
-from requests_html import HTMLSession
+
+from curl_cffi import requests as cffi_requests
 from real_headers import real_headers
 
 from ..unpacker import unpack_eval_script
@@ -24,9 +25,14 @@ class UniversalExtractor:
     """
 
     def __init__(self, session=None, debug=False):
-        self.session = session or HTMLSession()
+        # curl_cffi imita TLS + HTTP/2 de Chrome: pasa Cloudflare sin navegador
+        self.session = session or cffi_requests.Session(
+            impersonate="chrome131",
+            allow_redirects=True,
+        )
         self.debug = debug
         self.headers = None
+        self.final_url = None
 
         self.redirect_pattern = re.compile(r"https?://[^'\"<>]+")
         self.json_pattern = re.compile(
@@ -35,16 +41,17 @@ class UniversalExtractor:
         )
         self.junk_parts = ["@$", "^^", "~@", "%?", "*~", "!!", "#&"]
 
-        # ---- Patrones específicos de DoodStream ----
+        # ---- Patrones DoodStream ----
+        # Formato real: $.get('/pass_md5/HASH/TOKEN', ...)
         self.dood_pass_pattern = re.compile(
-            r"\$\.get\(['\"]/pass_md5/([^'\"]+)['\"]",
+            r"(?:\$|jQuery)\s*\.\s*get\s*\(\s*['\"]"
+            r"/pass_md5/([^'\"]+)['\"]",
             re.DOTALL,
         )
         self.dood_token_pattern = re.compile(
             r"token=([A-Za-z0-9]+)",
             re.DOTALL,
         )
-        # Patrón de URL típica de DoodStream: /e/ID o /d/ID
         self.dood_url_pattern = re.compile(
             r"/(?:e|d)/[A-Za-z0-9]+", re.IGNORECASE
         )
@@ -53,7 +60,6 @@ class UniversalExtractor:
     #                     API PÚBLICA
     # ============================================================
     def soporta(self, url):
-        """Universal acepta cualquier URL: es el fallback."""
         return True
 
     def extraer(self, url, _recursion=0):
@@ -66,8 +72,6 @@ class UniversalExtractor:
         except Exception as e:
             raise Exception(f"No se pudo obtener la página: {e}")
 
-        # El orden importa: primero las estrategias más genéricas y baratas,
-        # y DoodStream al final porque requiere 2 peticiones extra.
         estrategias = [
             ("patrones-directos",  self._estrategia_patrones_directos),
             ("eval-unpack",        self._estrategia_eval_unpack),
@@ -124,12 +128,23 @@ class UniversalExtractor:
         try:
             headers = real_headers()
             response = self.session.get(
-                url, headers=headers, allow_redirects=allow_redirects
+                url,
+                headers=headers,
+                allow_redirects=allow_redirects,
+                timeout=30,
             )
             response.raise_for_status()
 
             self.headers = dict(headers)
-            self.headers["Referer"] = self._dominio_base(response.url)
+            self.final_url = str(response.url)
+            self.headers["Referer"] = self._dominio_base(self.final_url)
+
+            # Diagnóstico: confirmar que el HTML es el embed real
+            if self.debug:
+                self._log(f"HTML final URL: {self.final_url}")
+                self._log(
+                    f"Contiene /pass_md5/: {'/pass_md5/' in response.text}"
+                )
 
             return response.text
         except Exception as e:
@@ -141,75 +156,149 @@ class UniversalExtractor:
         return f"{p.scheme}://{p.netloc}/"
 
     # ============================================================
-    #        ESTRATEGIA 5: DoodStream (pass_md5)
+    #        ESTRATEGIA 5: DoodStream (pass_md5, sin Playwright)
     # ============================================================
     def _es_doodstream(self, url, html):
-        """Heurística para decidir si vale la pena intentar DoodStream."""
         if self.dood_url_pattern.search(url):
             return True
-        if "/pass_md5/" in html or "$.get('/pass_md5/" in html:
+        if "/pass_md5/" in html:
             return True
         if "makePlay" in html and "pass_md5" in html:
             return True
         return False
 
     def _estrategia_doodstream(self, url, html):
-        # 1) Filtrar rápido: si no parece DoodStream, salir sin coste
         if not self._es_doodstream(url, html):
-            self._log("DoodStream: no aplica a esta URL/HTML")
+            self._log("DoodStream: no aplica")
             return None
 
-        self._log("DoodStream: buscando hash y token")
+        self._log("DoodStream: extrayendo hash y token")
 
-        # 2) Extraer el hash completo del bloque $.get('/pass_md5/...')
         m = self.dood_pass_pattern.search(html)
         if not m:
-            self._log("DoodStream: no se encontró patrón /pass_md5/")
+            self._log("DoodStream: no se encontró /pass_md5/")
             return None
-        pass_hash = m.group(1)
+        pass_path = m.group(1)
 
-        # 3) Extraer el token (viene del bloque makePlay o de la propia URL)
-        token_match = self.dood_token_pattern.search(html)
-        if not token_match:
-            self._log("DoodStream: no se encontró token")
-            return None
-        token = token_match.group(1)
+        if "/" in pass_path:
+            pass_hash, token = pass_path.rsplit("/", 1)
+        else:
+            pass_hash = pass_path
+            tm = self.dood_token_pattern.search(html)
+            if not tm:
+                self._log("DoodStream: no se encontró token")
+                return None
+            token = tm.group(1)
 
-        # 4) Construir la URL del segundo GET
-        base = self._dominio_base(url)
-        pass_url = f"{base}pass_md5/{pass_hash}"
+        self._log(f"DoodStream: hash={pass_hash} token={token}")
 
-        self._log(f"DoodStream: consultando {pass_url}")
-
-        # 5) Petición con Referer obligatorio
-        try:
-            headers = dict(self.headers or real_headers())
-            headers["Referer"] = url
-            headers["X-Requested-With"] = "XMLHttpRequest"
-            headers["Accept"] = "*/*"
-
-            resp = self.session.get(
-                pass_url, headers=headers, allow_redirects=True
+        # Sembrar cookies del HTML
+        seed = {}
+        for name in ("file_id", "aff", "ref_url", "dref_url"):
+            cm = re.search(
+                rf"\$\.cookie\('{name}',\s*'([^']*)'", html
             )
-            resp.raise_for_status()
-            data = resp.text.strip()
-        except Exception as e:
-            self._log(f"DoodStream: fallo en pass_md5 -> {e}")
-            return None
+            if cm and cm.group(1):
+                seed[name] = cm.group(1)
+
+        # CLAVE: usar el dominio FINAL tras redirecciones, no el original.
+        # Si doodstream.com redirige a dood.wf, el pass_md5 debe pedirse a dood.wf.
+        final_url = self.final_url if self.final_url else url
+        final_parsed = urlparse(final_url)
+        base = f"{final_parsed.scheme}://{final_parsed.netloc}/"
+
+        # Referer exacto: la URL final del embed (incluye query string)
+        referer = final_url
+
+        self._log(f"DoodStream: base final={base}")
+        self._log(f"DoodStream: referer={referer}")
+
+        pass_url = f"{base}pass_md5/{pass_hash}/{token}"
+
+        data = None
+        for attempt in range(3):
+            self._log(
+                f"DoodStream: GET {pass_url} (intento {attempt + 1})"
+            )
+            data = self._dood_pass_request(pass_url, referer, seed)
+            if data and data != "RELOAD" and not data.startswith("<"):
+                break
+            time.sleep(0.8 * (attempt + 1))
 
         if not data or data == "RELOAD" or data.startswith("<"):
-            self._log("DoodStream: respuesta inválida o RELOAD")
+            self._log("DoodStream: no se pudo obtener el video base")
             return None
 
-        # 6) Construir la URL final con sufijo aleatorio + token + expiry
+        # URL final con makePlay()
         rand10 = "".join(
             random.choices(string.ascii_letters + string.digits, k=10)
         )
         expiry = int(time.time() * 1000)
-        final_url = f"{data}{rand10}?token={token}&expiry={expiry}"
+        final_stream = f"{data}{rand10}?token={token}&expiry={expiry}"
 
-        self._log(f"DoodStream: URL final -> {final_url}")
-        return final_url
+        self._log(f"DoodStream: URL final -> {final_stream}")
+        return final_stream
+
+    def _dood_pass_request(self, pass_url, referer, seed_cookies):
+        """GET a /pass_md5/ con headers mínimos que usa DoodStream."""
+        try:
+            # Headers mínimos: Range es lo que usan los extractores funcionales.
+            # Evitamos X-Requested-With / Sec-Fetch-* que aquí a veces causan RELOAD.
+            headers = {
+                "Range": "bytes=0-",
+                "Referer": referer,
+                "Accept": "*/*",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Accept-Encoding": "gzip, deflate, br, zstd",
+            }
+
+            if self.headers and "User-Agent" in self.headers:
+                headers["User-Agent"] = self.headers["User-Agent"]
+            else:
+                headers["User-Agent"] = (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/131.0.0.0 Safari/537.36"
+                )
+
+            # Sembrar cookies en la sesión
+            domain = urlparse(referer).netloc
+            for name, value in seed_cookies.items():
+                try:
+                    self.session.cookies.set(
+                        name, value, domain=domain, path="/"
+                    )
+                except Exception:
+                    pass
+
+            resp = self.session.get(
+                pass_url,
+                headers=headers,
+                allow_redirects=True,
+                timeout=30,
+            )
+
+            if resp.status_code != 200:
+                self._log(f"DoodStream: status {resp.status_code}")
+                return None
+
+            txt = resp.text.strip()
+            if not txt:
+                return None
+            if txt == "RELOAD":
+                return None
+            if txt.startswith("<"):
+                return None
+            if not txt.startswith("http"):
+                self._log(
+                    f"DoodStream: respuesta no-URL: {txt[:80]!r}"
+                )
+                return None
+
+            return txt
+        except Exception as e:
+            self._log(f"DoodStream: request error -> {e}")
+            return None
 
     # ============================================================
     #        ESTRATEGIA 1: eval-unpacker

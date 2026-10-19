@@ -33,7 +33,7 @@ EXTRACTOR_MAP = {
 #    "filemoon":   FileMoonExtractor,
     "voe":        VoeExtractor,
     "okru":       OkRuExtractor,
-    "mixdrop":	  MixdropExtractor,
+    "mixdrop":    MixdropExtractor,
     "universal":  UniversalExtractor,
 }
 
@@ -52,20 +52,58 @@ def _acepta_debug(cls):
         return False
 
 
+# ---------- Carga de urls.json (lista o dict) ----------
+
+def cargar_urls():
+    """Carga urls.json.
+
+    Formatos aceptados:
+      - Lista (nuevo, recomendado):
+          [ {"name": "voe", "url": "https://..."}, ... ]
+      - Dict (viejo, compatibilidad):
+          { "voe": "https://...", ... }
+
+    Devuelve una lista de dicts con id único, name y url.
+    """
+    raw = json.loads(URLS_FILE.read_text(encoding="utf-8"))
+
+    if isinstance(raw, list):
+        entradas = []
+        for i, item in enumerate(raw):
+            if not isinstance(item, dict) or "name" not in item or "url" not in item:
+                raise ValueError(
+                    f"Entrada {i} inválida en urls.json: se espera {{\"name\", \"url\"}}"
+                )
+            entradas.append({
+                "id": f'{item["name"]}#{i}',
+                "name": item["name"],
+                "url": item["url"],
+            })
+        return entradas
+
+    if isinstance(raw, dict):
+        return [
+            {"id": f"{k}#{i}", "name": k, "url": v}
+            for i, (k, v) in enumerate(raw.items())
+        ]
+
+    raise ValueError("urls.json debe ser una lista o un objeto JSON")
+
+
 # ---------- Fase 1: HTTP ----------
 
-def fase_http(urls):
+def fase_http(entradas):
     print("--- Estado HTTP ---")
     resultados = {}
-    for nombre, url in urls.items():
+    for e in entradas:
         try:
-            r = requests.get(url, timeout=10)
+            r = requests.get(e["url"], timeout=10)
             status = "OK" if r.status_code == 200 else f"estado {r.status_code}"
-            print(f"  {nombre:<12} {status}")
-            resultados[nombre] = r.status_code
-        except Exception as e:
-            print(f"  {nombre:<12} error de conexión ({e})")
-            resultados[nombre] = None
+            print(f"  {e['id']:<20} {status}")
+            resultados[e["id"]] = r.status_code
+        except Exception as ex:
+            print(f"  {e['id']:<20} error de conexión ({ex})")
+            resultados[e["id"]] = None
     return resultados
 
 
@@ -79,6 +117,7 @@ def probar(nombre, cls, url):
         "headers_antes": None,
         "error": None,
         "tested_url": url,
+        "extractor": nombre,
     }
 
     try:
@@ -116,25 +155,25 @@ def probar(nombre, cls, url):
     return resultado
 
 
-def fase_extraccion(urls):
+def fase_extraccion(entradas):
     print("\n--- Extracción ---")
     resultados = {}
 
-    for nombre, url in urls.items():
-        cls = EXTRACTOR_MAP.get(nombre)
+    for e in entradas:
+        cls = EXTRACTOR_MAP.get(e["name"])
         if cls is None:
-            print(f"  {nombre:<12} (sin extractor, saltando)")
+            print(f"  {e['id']:<20} (sin extractor, saltando)")
             continue
 
-        r = probar(nombre, cls, url)
-        resultados[nombre] = r
+        r = probar(e["name"], cls, e["url"])
+        resultados[e["id"]] = r
 
         if r["live"]:
-            print(f"  {nombre:<12} LIVE")
+            print(f"  {e['id']:<20} LIVE")
         elif r["error"] == "VACIO":
-            print(f"  {nombre:<12} VACIO")
+            print(f"  {e['id']:<20} VACIO")
         else:
-            print(f"  {nombre:<12} DEAD ({r['error']})")
+            print(f"  {e['id']:<20} DEAD ({r['error']})")
 
     return resultados
 
@@ -146,28 +185,28 @@ def fase_headers(resultados):
     ok = 0
     total = 0
 
-    for nombre, r in resultados.items():
+    for rid, r in resultados.items():
         if not r["live"]:
-            print(f"  {nombre:<12} (saltando, no LIVE)")
+            print(f"  {rid:<20} (saltando, no LIVE)")
             continue
 
         total += 1
         headers = r["headers"]
 
         if headers is None:
-            print(f"  {nombre:<12} \033[91m✗\033[0m sin headers")
+            print(f"  {rid:<20} \033[91m✗\033[0m sin headers")
             continue
 
         if "Referer" not in headers:
-            print(f"  {nombre:<12} \033[91m✗\033[0m sin Referer")
+            print(f"  {rid:<20} \033[91m✗\033[0m sin Referer")
             continue
 
         if "User-Agent" not in headers:
-            print(f"  {nombre:<12} \033[91m✗\033[0m sin User-Agent")
+            print(f"  {rid:<20} \033[91m✗\033[0m sin User-Agent")
             continue
 
         ref = headers["Referer"]
-        print(f"  {nombre:<12} \033[92m✓\033[0m Referer={ref}")
+        print(f"  {rid:<20} \033[92m✓\033[0m Referer={ref}")
         ok += 1
 
     return ok, total
@@ -179,7 +218,7 @@ def fase_api(resultados):
     print("\n--- API: obtener_headers antes/después ---")
 
     comprobados = 0
-    for nombre, r in resultados.items():
+    for rid, r in resultados.items():
         if not r["live"]:
             continue
 
@@ -187,14 +226,14 @@ def fase_api(resultados):
         despues = r.get("headers")
 
         if antes is not None:
-            print(f"  {nombre:<12} \033[91m✗\033[0m antes de extraer ya había headers")
+            print(f"  {rid:<20} \033[91m✗\033[0m antes de extraer ya había headers")
             return False
 
         if despues is None:
-            print(f"  {nombre:<12} \033[91m✗\033[0m después de extraer no hay headers")
+            print(f"  {rid:<20} \033[91m✗\033[0m después de extraer no hay headers")
             return False
 
-        print(f"  {nombre:<12} \033[92m✓\033[0m None antes, dict después")
+        print(f"  {rid:<20} \033[92m✓\033[0m None antes, dict después")
         comprobados += 1
 
     return comprobados > 0
@@ -214,14 +253,15 @@ def guardar_status(resultados, headers_ok, headers_total, http_status):
         "headers_total": headers_total,
         "http_status": http_status,
         "extractores": {
-            nombre: {
+            rid: {
+                "name": r.get("extractor", rid),
                 "live": r["live"],
                 "info": r["url"] or "",
                 "headers": r["headers"],
                 "error": r["error"],
                 "tested_url": r["tested_url"],
             }
-            for nombre, r in resultados.items()
+            for rid, r in resultados.items()
         },
     }
     STATUS_FILE.write_text(
@@ -439,7 +479,7 @@ $rows
 """)
 
 
-def _fila_html(nombre, r):
+def _fila_html(nombre, rid, r):
     if r["live"]:
         estado = '<span class="live">● LIVE</span>'
     elif r["error"] == "VACIO":
@@ -472,7 +512,8 @@ def _fila_html(nombre, r):
 
     return (
         f'<tr>'
-        f'<td class="name">{nombre}</td>'
+        f'<td class="name">{html.escape(nombre)}<br>'
+        f'<span class="tested">{html.escape(rid)}</span></td>'
         f'<td>{estado}</td>'
         f'<td><span class="tested">{tested_short}</span></td>'
         f'<td><div class="url">{urls_html}</div>{headers_html}</td>'
@@ -498,7 +539,10 @@ def guardar_html(status, resultados, headers_ok, headers_total):
     else:
         global_status = "DOWN"
 
-    rows = "\n".join(_fila_html(n, r) for n, r in resultados.items())
+    rows = "\n".join(
+        _fila_html(r.get("extractor", rid), rid, r)
+        for rid, r in resultados.items()
+    )
 
     html_out = HTML_TEMPLATE.substitute(
         live=live,
@@ -523,10 +567,11 @@ def guardar_html(status, resultados, headers_ok, headers_total):
 def main():
     print("PRUEBA DE EXTRACTORES\n")
 
-    urls = json.loads(URLS_FILE.read_text(encoding="utf-8"))
+    entradas = cargar_urls()
+    print(f"URLs a probar: {len(entradas)}\n")
 
-    http_status = fase_http(urls)
-    resultados = fase_extraccion(urls)
+    http_status = fase_http(entradas)
+    resultados = fase_extraccion(entradas)
     headers_ok, headers_total = fase_headers(resultados)
     api_ok = fase_api(resultados)
 

@@ -1,8 +1,9 @@
-{
-  "mp4upload":  "https://www.mp4upload.com/embed-882s1404awa2.html",
-  "streamtape": "https://streamtape.com/e/jpYjkraO4ZhzVZk/01.mp4",
-  "voe":        "https://voe.sx/e/vnooybqweztc",
-  "okru":       "https://ok.ru/videoembed/6127798127135",
-  "mixdrop":    "https://mxdrop.to/e/4d99e8q1sn6jp",
-  "universal":  "https://luluvdo.com/e/k60tod6pn7zk"
-}
+[
+  { "name": "mp4upload",  "url": "https://www.mp4upload.com/embed-882s1404awa2.html" },
+  { "name": "streamtape", "url": "https://streamtape.com/e/jpYjkraO4ZhzVZk/01.mp4" },
+  { "name": "voe",        "url": "https://voe.sx/e/vnooybqweztc" },
+  { "name": "okru",       "url": "https://ok.ru/videoembed/6127798127135" },
+  { "name": "mixdrop",    "url": "https://mxdrop.to/e/4d99e8q1sn6jp" },
+  { "name": "universal",  "url": "https://luluvdo.com/e/k60tod6pn7zk" },
+  { "name": "universal",  "url": "https://streamwish.top/e/vy446s3qg0ed" }
+]
