@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Extractor universal by IamJony
+# Versión portable para Kodi: sin curl_cffi, solo requests.
 
 import sys
 import re
@@ -11,9 +12,9 @@ import string
 import time
 from urllib.parse import urlparse, urljoin
 
-from curl_cffi import requests as cffi_requests
-from real_headers import real_headers
+from requests_html import HTMLSession
 
+from real_headers import real_headers
 from ..unpacker import unpack_eval_script
 
 
@@ -25,11 +26,7 @@ class UniversalExtractor:
     """
 
     def __init__(self, session=None, debug=False):
-        # curl_cffi imita TLS + HTTP/2 de Chrome: pasa Cloudflare sin navegador
-        self.session = session or cffi_requests.Session(
-            impersonate="chrome131",
-            allow_redirects=True,
-        )
+        self.session = session or HTMLSession()
         self.debug = debug
         self.headers = None
         self.final_url = None
@@ -85,10 +82,10 @@ class UniversalExtractor:
                 self._log(f"Probando estrategia: {nombre}")
                 resultado = fn(url, html)
                 if resultado:
-                    self._log(f"✔ Éxito con '{nombre}': {resultado}")
+                    self._log(f"OK con '{nombre}': {resultado}")
                     return resultado
             except Exception as e:
-                self._log(f"✘ Estrategia '{nombre}' falló: {e}")
+                self._log(f"FALLO estrategia '{nombre}': {e}")
                 continue
 
         try:
@@ -97,7 +94,7 @@ class UniversalExtractor:
             if next_url:
                 return self.extraer(next_url, _recursion + 1)
         except Exception as e:
-            self._log(f"✘ Redirección falló: {e}")
+            self._log(f"FALLO redirección: {e}")
 
         raise Exception("Ninguna estrategia pudo extraer el video")
 
@@ -126,7 +123,7 @@ class UniversalExtractor:
     # ============================================================
     def _obtener_html(self, url, allow_redirects=True):
         try:
-            headers = real_headers()
+            headers = self._headers_seguros()
             response = self.session.get(
                 url,
                 headers=headers,
@@ -139,7 +136,6 @@ class UniversalExtractor:
             self.final_url = str(response.url)
             self.headers["Referer"] = self._dominio_base(self.final_url)
 
-            # Diagnóstico: confirmar que el HTML es el embed real
             if self.debug:
                 self._log(f"HTML final URL: {self.final_url}")
                 self._log(
@@ -150,13 +146,29 @@ class UniversalExtractor:
         except Exception as e:
             raise Exception(f"Error al descargar la página: {e}")
 
+    def _headers_seguros(self):
+        """real_headers() pero sin codificaciones que requests no maneja."""
+        try:
+            headers = dict(real_headers())
+        except Exception:
+            headers = {}
+        # requests soporta gzip/deflate nativo. br/zstd requieren extras.
+        headers["Accept-Encoding"] = "gzip, deflate"
+        headers.setdefault(
+            "User-Agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/131.0.0.0 Safari/537.36",
+        )
+        return headers
+
     @staticmethod
     def _dominio_base(url):
         p = urlparse(url)
         return f"{p.scheme}://{p.netloc}/"
 
     # ============================================================
-    #        ESTRATEGIA 5: DoodStream (pass_md5, sin Playwright)
+    #        ESTRATEGIA 5: DoodStream (pass_md5)
     # ============================================================
     def _es_doodstream(self, url, html):
         if self.dood_url_pattern.search(url):
@@ -195,19 +207,14 @@ class UniversalExtractor:
         # Sembrar cookies del HTML
         seed = {}
         for name in ("file_id", "aff", "ref_url", "dref_url"):
-            cm = re.search(
-                rf"\$\.cookie\('{name}',\s*'([^']*)'", html
-            )
+            cm = re.search(rf"\$\.cookie\('{name}',\s*'([^']*)'", html)
             if cm and cm.group(1):
                 seed[name] = cm.group(1)
 
-        # CLAVE: usar el dominio FINAL tras redirecciones, no el original.
-        # Si doodstream.com redirige a dood.wf, el pass_md5 debe pedirse a dood.wf.
+        # CLAVE: usar el dominio FINAL tras redirecciones
         final_url = self.final_url if self.final_url else url
         final_parsed = urlparse(final_url)
         base = f"{final_parsed.scheme}://{final_parsed.netloc}/"
-
-        # Referer exacto: la URL final del embed (incluye query string)
         referer = final_url
 
         self._log(f"DoodStream: base final={base}")
@@ -217,9 +224,7 @@ class UniversalExtractor:
 
         data = None
         for attempt in range(3):
-            self._log(
-                f"DoodStream: GET {pass_url} (intento {attempt + 1})"
-            )
+            self._log(f"DoodStream: GET {pass_url} (intento {attempt + 1})")
             data = self._dood_pass_request(pass_url, referer, seed)
             if data and data != "RELOAD" and not data.startswith("<"):
                 break
@@ -229,7 +234,6 @@ class UniversalExtractor:
             self._log("DoodStream: no se pudo obtener el video base")
             return None
 
-        # URL final con makePlay()
         rand10 = "".join(
             random.choices(string.ascii_letters + string.digits, k=10)
         )
@@ -240,16 +244,13 @@ class UniversalExtractor:
         return final_stream
 
     def _dood_pass_request(self, pass_url, referer, seed_cookies):
-        """GET a /pass_md5/ con headers mínimos que usa DoodStream."""
         try:
-            # Headers mínimos: Range es lo que usan los extractores funcionales.
-            # Evitamos X-Requested-With / Sec-Fetch-* que aquí a veces causan RELOAD.
             headers = {
                 "Range": "bytes=0-",
                 "Referer": referer,
                 "Accept": "*/*",
                 "Accept-Language": "en-US,en;q=0.9",
-                "Accept-Encoding": "gzip, deflate, br, zstd",
+                "Accept-Encoding": "gzip, deflate",
             }
 
             if self.headers and "User-Agent" in self.headers:
@@ -261,7 +262,6 @@ class UniversalExtractor:
                     "Chrome/131.0.0.0 Safari/537.36"
                 )
 
-            # Sembrar cookies en la sesión
             domain = urlparse(referer).netloc
             for name, value in seed_cookies.items():
                 try:
@@ -290,9 +290,7 @@ class UniversalExtractor:
             if txt.startswith("<"):
                 return None
             if not txt.startswith("http"):
-                self._log(
-                    f"DoodStream: respuesta no-URL: {txt[:80]!r}"
-                )
+                self._log(f"DoodStream: respuesta no-URL: {txt[:80]!r}")
                 return None
 
             return txt
