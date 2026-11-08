@@ -21,6 +21,7 @@ classifiers = [
 
 dependencies = [
     "requests_html",
+    "cryptography"
     "real_headers",
     "lxml_html_clean",
     "eval-unpacker @ https://github.com/IamJony/eval-unpacker/releases/download/eval_unpacker-0.1.0/eval_unpacker-0.1.0-py3-none-any.whl",
